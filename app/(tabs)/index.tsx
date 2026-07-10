@@ -1,6 +1,6 @@
+import { useApp } from "@/context/AppContext";
 import React from "react";
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { useApp } from "../../context/AppContext";
 
 export default function PatientDashboard() {
   const { appointments, userRole } = useApp();
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 20 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: "#1E293B", marginBottom: 16 },
   card: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
-  cardHeader: { flexDirection: "row", justifyContent: "between", alignItems: "center" },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   doctorName: { fontSize: 16, fontWeight: "600", color: "#1E293B" },
   statusBadge: { backgroundColor: "#CCFBF1", color: "#0F766E", fontSize: 12, fontWeight: "600", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: "hidden" },
   specialty: { fontSize: 14, color: "#64748B", marginTop: 2 },

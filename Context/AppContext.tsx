@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
-import { Appointment, INITIAL_APPOINTMENTS, INITIAL_PRESCRIPTIONS, Prescription } from "../data/mockData";
-
+import { Appointment, INITIAL_APPOINTMENTS, INITIAL_PRESCRIPTIONS, Prescription } from "../Data/mockData";
 interface AppContextType {
   userRole: "Patient" | "Doctor";
   setUserRole: (role: "Patient" | "Doctor") => void;
