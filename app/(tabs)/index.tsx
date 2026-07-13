@@ -1,4 +1,6 @@
+import { router } from "expo-router";
 import { useState } from "react";
+
 import {
   FlatList,
   SafeAreaView,
@@ -15,14 +17,11 @@ import { COLORS } from "../../constants/theme";
 
 import {
   Doctor,
-  DOCTOR_CATEGORIES,
   DOCTORS,
+  DOCTOR_CATEGORIES,
 } from "../../data/doctors";
 
 export default function HomeScreen() {
-  const [selectedDoctor, setSelectedDoctor] =
-    useState<Doctor | null>(null);
-
   const [searchText, setSearchText] =
     useState("");
 
@@ -53,16 +52,19 @@ export default function HomeScreen() {
         doctor.specialization ===
           selectedCategory;
 
-      return (
-        matchesSearch && matchesCategory
-      );
+      return matchesSearch && matchesCategory;
     }
   );
 
   const handleDoctorPress = (
     doctor: Doctor
   ) => {
-    setSelectedDoctor(doctor);
+    router.push({
+      pathname: "/doctor/[id]",
+      params: {
+        id: doctor.id,
+      },
+    });
   };
 
   return (
@@ -115,30 +117,6 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* Selected Doctor */}
-
-      {selectedDoctor ? (
-        <View style={styles.selectedBox}>
-          <Text style={styles.selectedLabel}>
-            Selected Doctor
-          </Text>
-
-          <Text style={styles.selectedName}>
-            {selectedDoctor.name}
-          </Text>
-
-          <Text
-            style={
-              styles.selectedSpecialization
-            }
-          >
-            {
-              selectedDoctor.specialization
-            }
-          </Text>
-        </View>
-      ) : null}
-
       {/* Result Count */}
 
       <View style={styles.resultHeader}>
@@ -168,9 +146,7 @@ export default function HomeScreen() {
         contentContainerStyle={
           styles.doctorList
         }
-        showsVerticalScrollIndicator={
-          false
-        }
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
             <Text style={styles.emptyTitle}>
@@ -221,36 +197,6 @@ const styles = StyleSheet.create({
 
   categoryList: {
     paddingHorizontal: 16,
-  },
-
-  selectedBox: {
-    backgroundColor: COLORS.primaryLight,
-    marginHorizontal: 16,
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-
-  selectedLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: COLORS.primaryDark,
-    textTransform: "uppercase",
-  },
-
-  selectedName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginTop: 4,
-  },
-
-  selectedSpecialization: {
-    fontSize: 13,
-    color: COLORS.primary,
-    marginTop: 2,
   },
 
   resultHeader: {

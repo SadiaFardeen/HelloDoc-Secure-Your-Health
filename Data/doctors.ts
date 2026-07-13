@@ -123,7 +123,7 @@ export const DOCTORS: Doctor[] = [
     fee: 1200,
     rating: 4.6,
     availability: "Available Sunday",
-    imageUrl: "https://i.pravatar.cc/300?img=15",
+    imageUrl: "https://i.pravatar.cc/300?img=33",
     about:
       "Dr. Imran Hossain treats bone fractures, joint pain, arthritis, sports injuries and spinal conditions.",
     languages: ["Bangla", "English"],
@@ -144,6 +144,38 @@ export const DOCTORS: Doctor[] = [
       "Dr. Rafia Sultana provides primary medical care and treatment for common and chronic health conditions.",
     languages: ["Bangla", "English"],
   },
+  {
+    id: "9",
+    name: "Dr. Md. Nur Nobi",
+    specialization: "Dermatology",
+    qualification: "MBBS, MRCP",
+    experience: 15,
+    hospital: "Badda General Hospital",
+    location: "Badda, Dhaka",
+    fee: 1000,
+    rating: 4.9,
+    availability: "Available Today",
+    imageUrl: "https://i.pravatar.cc/300?img=01",
+    about:
+      "Dr. Md. Nur Nobi provides primary medical care and treatment for skin and venereal diseases.",
+    languages: ["Bangla", "English"],
+  },
+  {
+    id: "10",
+    name: "Dr. Ayesha Khan",
+    specialization: "ENT",
+    qualification: "MBBS, FCPS (ENT)",
+    experience: 12,
+    hospital: "Dhaka Medical College Hospital",
+    location: "Dhanmondi, Dhaka",
+    fee: 1300,
+    rating: 4.8,
+    availability: "Available Tomorrow",
+    imageUrl: "https://i.pravatar.cc/300?img=46",
+    about:
+      "Dr. Ayesha Khan provides specialized care for ear, nose and throat conditions.",
+    languages: ["Bangla", "English"],
+  },
 ];
 
 export const DOCTOR_CATEGORIES: string[] = [
@@ -155,4 +187,5 @@ export const DOCTOR_CATEGORIES: string[] = [
   "Pediatrics",
   "Gynecology",
   "Orthopedics",
+  "ENT"
 ];
