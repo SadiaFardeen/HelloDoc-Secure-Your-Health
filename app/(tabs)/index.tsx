@@ -1,14 +1,13 @@
-// app/(tabs)/index.tsx
-
 import { useState } from "react";
 import {
+  FlatList,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
+import CategoryChip from "../../components/category-chip";
 import DoctorCard from "../../components/doctor-card";
 import SearchBar from "../../components/search-bar";
 
@@ -16,6 +15,7 @@ import { COLORS } from "../../constants/theme";
 
 import {
   Doctor,
+  DOCTOR_CATEGORIES,
   DOCTORS,
 } from "../../data/doctors";
 
@@ -26,22 +26,42 @@ export default function HomeScreen() {
   const [searchText, setSearchText] =
     useState("");
 
+  const [
+    selectedCategory,
+    setSelectedCategory,
+  ] = useState("All");
+
   const filteredDoctors = DOCTORS.filter(
     (doctor) => {
-      const query = searchText.toLowerCase();
+      const query = searchText
+        .trim()
+        .toLowerCase();
 
-      return (
+      const matchesSearch =
         doctor.name
           .toLowerCase()
           .includes(query) ||
         doctor.specialization
           .toLowerCase()
-          .includes(query)
+          .includes(query) ||
+        doctor.hospital
+          .toLowerCase()
+          .includes(query);
+
+      const matchesCategory =
+        selectedCategory === "All" ||
+        doctor.specialization ===
+          selectedCategory;
+
+      return (
+        matchesSearch && matchesCategory
       );
     }
   );
 
-  const handleDoctorPress = (doctor: Doctor) => {
+  const handleDoctorPress = (
+    doctor: Doctor
+  ) => {
     setSelectedDoctor(doctor);
   };
 
@@ -55,17 +75,45 @@ export default function HomeScreen() {
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose a doctor for your consultation
+          Choose a doctor for your
+          consultation
         </Text>
       </View>
 
-      {/* Search */}
+      {/* Search Bar */}
 
       <SearchBar
         value={searchText}
         onChangeText={setSearchText}
-        placeholder="Search by name or specialization"
+        placeholder="Search name, speciality or hospital"
       />
+
+      {/* Category Filter */}
+
+      <View style={styles.categorySection}>
+        <FlatList
+          data={DOCTOR_CATEGORIES}
+          keyExtractor={(item) => item}
+          horizontal
+          showsHorizontalScrollIndicator={
+            false
+          }
+          contentContainerStyle={
+            styles.categoryList
+          }
+          renderItem={({ item }) => (
+            <CategoryChip
+              title={item}
+              selected={
+                selectedCategory === item
+              }
+              onPress={() =>
+                setSelectedCategory(item)
+              }
+            />
+          )}
+        />
+      </View>
 
       {/* Selected Doctor */}
 
@@ -84,25 +132,58 @@ export default function HomeScreen() {
               styles.selectedSpecialization
             }
           >
-            {selectedDoctor.specialization}
+            {
+              selectedDoctor.specialization
+            }
           </Text>
         </View>
       ) : null}
 
+      {/* Result Count */}
+
+      <View style={styles.resultHeader}>
+        <Text style={styles.resultText}>
+          {filteredDoctors.length} doctors
+          found
+        </Text>
+
+        {selectedCategory !== "All" ? (
+          <Text style={styles.categoryName}>
+            {selectedCategory}
+          </Text>
+        ) : null}
+      </View>
+
       {/* Doctor List */}
 
-      <ScrollView
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredDoctors.map((doctor) => (
+      <FlatList
+        data={filteredDoctors}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
           <DoctorCard
-            key={doctor.id}
-            doctor={doctor}
+            doctor={item}
             onPress={handleDoctorPress}
           />
-        ))}
-      </ScrollView>
+        )}
+        contentContainerStyle={
+          styles.doctorList
+        }
+        showsVerticalScrollIndicator={
+          false
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>
+              No doctors found
+            </Text>
+
+            <Text style={styles.emptyText}>
+              Try another name,
+              specialization or category.
+            </Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -129,6 +210,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#CCFBF1",
     marginTop: 4,
+  },
+
+  categorySection: {
+    backgroundColor: COLORS.surface,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+
+  categoryList: {
+    paddingHorizontal: 16,
   },
 
   selectedBox: {
@@ -161,8 +253,49 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  list: {
-    paddingTop: 16,
+  resultHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+
+  resultText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+  },
+
+  categoryName: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+
+  doctorList: {
+    flexGrow: 1,
     paddingBottom: 30,
+  },
+
+  emptyBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 30,
+    paddingVertical: 80,
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+
+  emptyText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+    marginTop: 8,
   },
 });
