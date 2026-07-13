@@ -70,17 +70,34 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       {/* Header */}
-
       <View style={styles.header}>
-        <Text style={styles.title}>
-          Find a Doctor
-        </Text>
+  <View style={styles.headerTopRow}>
+    <View>
+      <Text style={styles.brandName}>
+        HelloDoc
+      </Text>
 
-        <Text style={styles.subtitle}>
-          Choose a doctor for your
-          consultation
-        </Text>
-      </View>
+      <Text style={styles.tagline}>
+        We secure your health
+      </Text>
+    </View>
+
+    <View style={styles.profileCircle}>
+      <Text style={styles.profileText}>
+        P
+      </Text>
+    </View>
+  </View>
+
+  <Text style={styles.welcomeText}>
+    Find the right doctor
+  </Text>
+
+  <Text style={styles.welcomeSubtext}>
+    Search trusted specialists and start a secure
+    consultation.
+  </Text>
+</View>
 
       {/* Search Bar */}
 
@@ -165,15 +182,64 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+
+  headerTopRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+},
+
+brandName: {
+  fontSize: 22,
+  fontWeight: "900",
+  color: "#FFFFFF",
+},
+
+tagline: {
+  fontSize: 11,
+  color: "#99F6E4",
+  marginTop: 2,
+},
+
+profileCircle: {
+  width: 42,
+  height: 42,
+  borderRadius: 21,
+  backgroundColor: COLORS.primary,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+profileText: {
+  color: "#FFFFFF",
+  fontWeight: "800",
+},
+
+welcomeText: {
+  fontSize: 26,
+  fontWeight: "900",
+  color: "#FFFFFF",
+  marginTop: 28,
+},
+
+welcomeSubtext: {
+  fontSize: 13,
+  color: "#D9F9F4",
+  marginTop: 7,
+},
+
   screen: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
 
   header: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+  backgroundColor: COLORS.secondary,
+  paddingHorizontal: 20,
+  paddingTop: 20,
+  paddingBottom: 26,
+  borderBottomLeftRadius: 28,
+  borderBottomRightRadius: 28,
   },
 
   title: {
