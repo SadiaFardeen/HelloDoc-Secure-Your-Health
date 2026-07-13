@@ -42,8 +42,7 @@ export default function DoctorDetailsScreen() {
           </Text>
 
           <Text style={styles.notFoundText}>
-            The selected doctor information is
-            unavailable.
+            The selected doctor information is unavailable.
           </Text>
 
           <CustomButton
@@ -57,16 +56,16 @@ export default function DoctorDetailsScreen() {
   }
 
   const handleStartConsultation = () => {
-    console.log(
-      "Start consultation with:",
-      doctor.name
-    );
+    router.push({
+      pathname: "/consultation/[id]",
+      params: {
+        id: doctor.id,
+      },
+    });
   };
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Header */}
-
       <View style={styles.header}>
         <Text
           style={styles.backText}
@@ -84,8 +83,6 @@ export default function DoctorDetailsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Main profile card */}
-
         <View style={styles.profileCard}>
           <Image
             source={{ uri: doctor.imageUrl }}
@@ -120,8 +117,6 @@ export default function DoctorDetailsScreen() {
           </Text>
         </View>
 
-        {/* Workplace information */}
-
         <View style={styles.informationCard}>
           <Text style={styles.sectionTitle}>
             Workplace
@@ -136,8 +131,6 @@ export default function DoctorDetailsScreen() {
           </Text>
         </View>
 
-        {/* About doctor */}
-
         <View style={styles.informationCard}>
           <Text style={styles.sectionTitle}>
             About
@@ -147,8 +140,6 @@ export default function DoctorDetailsScreen() {
             {doctor.about}
           </Text>
         </View>
-
-        {/* Languages */}
 
         <View style={styles.informationCard}>
           <Text style={styles.sectionTitle}>
@@ -168,8 +159,6 @@ export default function DoctorDetailsScreen() {
             ))}
           </View>
         </View>
-
-        {/* Consultation fee */}
 
         <View style={styles.feeCard}>
           <View>
