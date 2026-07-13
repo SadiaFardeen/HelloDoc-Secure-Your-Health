@@ -10,7 +10,10 @@ import {
 } from "react-native";
 
 import DoctorCard from "../../components/doctor-card";
+import SearchBar from "../../components/search-bar";
+
 import { COLORS } from "../../constants/theme";
+
 import {
   Doctor,
   DOCTORS,
@@ -20,6 +23,24 @@ export default function HomeScreen() {
   const [selectedDoctor, setSelectedDoctor] =
     useState<Doctor | null>(null);
 
+  const [searchText, setSearchText] =
+    useState("");
+
+  const filteredDoctors = DOCTORS.filter(
+    (doctor) => {
+      const query = searchText.toLowerCase();
+
+      return (
+        doctor.name
+          .toLowerCase()
+          .includes(query) ||
+        doctor.specialization
+          .toLowerCase()
+          .includes(query)
+      );
+    }
+  );
+
   const handleDoctorPress = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
   };
@@ -27,15 +48,27 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       {/* Header */}
+
       <View style={styles.header}>
-        <Text style={styles.title}>Find a Doctor</Text>
+        <Text style={styles.title}>
+          Find a Doctor
+        </Text>
 
         <Text style={styles.subtitle}>
           Choose a doctor for your consultation
         </Text>
       </View>
 
+      {/* Search */}
+
+      <SearchBar
+        value={searchText}
+        onChangeText={setSearchText}
+        placeholder="Search by name or specialization"
+      />
+
       {/* Selected Doctor */}
+
       {selectedDoctor ? (
         <View style={styles.selectedBox}>
           <Text style={styles.selectedLabel}>
@@ -46,18 +79,23 @@ export default function HomeScreen() {
             {selectedDoctor.name}
           </Text>
 
-          <Text style={styles.selectedSpecialization}>
+          <Text
+            style={
+              styles.selectedSpecialization
+            }
+          >
             {selectedDoctor.specialization}
           </Text>
         </View>
       ) : null}
 
       {/* Doctor List */}
+
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {DOCTORS.map((doctor) => (
+        {filteredDoctors.map((doctor) => (
           <DoctorCard
             key={doctor.id}
             doctor={doctor}
