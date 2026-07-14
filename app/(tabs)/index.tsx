@@ -3,11 +3,12 @@ import { useState } from "react";
 
 import {
   FlatList,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import CategoryChip from "../../components/category-chip";
 import DoctorCard from "../../components/doctor-card";
@@ -17,8 +18,8 @@ import { COLORS } from "../../constants/theme";
 
 import {
   Doctor,
-  DOCTORS,
   DOCTOR_CATEGORIES,
+  DOCTORS,
 } from "../../data/doctors";
 
 export default function HomeScreen() {
