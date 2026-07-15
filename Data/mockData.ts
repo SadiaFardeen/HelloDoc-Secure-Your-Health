@@ -32,7 +32,7 @@ export const DOCTORS: Doctor[] = [
     specialty: "Cardiology",
     hospital: "Square Hospital",
     fee: 1000,
-    availableDays: ["Sunday", "Tuesday", "Thursday"]
+    availableDays: ["Sunday", "Tuesday", "Thursday"],
   },
   {
     id: "d2",
@@ -40,15 +40,88 @@ export const DOCTORS: Doctor[] = [
     specialty: "Pediatrics",
     hospital: "Evercare Hospital",
     fee: 800,
-    availableDays: ["Monday", "Wednesday"]
-  }
+    availableDays: ["Monday", "Wednesday"],
+  },
+  {
+    id: "d3",
+    name: "Dr. Farhan Ahmed",
+    specialty: "Medicine",
+    hospital: "United Hospital",
+    fee: 900,
+    availableDays: ["Sunday", "Monday", "Wednesday"],
+  },
+  {
+    id: "d4",
+    name: "Dr. Tania Islam",
+    specialty: "Dermatology",
+    hospital: "Labaid Hospital",
+    fee: 950,
+    availableDays: ["Tuesday", "Thursday"],
+  },
+  {
+    id: "d5",
+    name: "Dr. Mahmud Hasan",
+    specialty: "Neurology",
+    hospital: "Popular Hospital",
+    fee: 1200,
+    availableDays: ["Monday", "Thursday"],
+  },
+  {
+    id: "d6",
+    name: "Dr. Sadia Noor",
+    specialty: "Orthopedics",
+    hospital: "Square Hospital",
+    fee: 1100,
+    availableDays: ["Sunday", "Tuesday"],
+  },
+  {
+    id: "d7",
+    name: "Dr. Rakib Hossain",
+    specialty: "Medicine",
+    hospital: "Ibn Sina Hospital",
+    fee: 850,
+    availableDays: ["Sunday", "Wednesday", "Friday"],
+  },
+  {
+    id: "d8",
+    name: "Dr. Sharmeen Akter",
+    specialty: "Cardiology",
+    hospital: "Popular Hospital",
+    fee: 1050,
+    availableDays: ["Monday", "Tuesday", "Thursday"],
+  },
 ];
 
 export const INITIAL_APPOINTMENTS: Appointment[] = [
-  { id: "a1", patientName: "Sadia Fardeen", doctorName: "Dr. Asif Rahman", specialty: "Cardiology", date: "2026-07-15", time: "10:00 AM", status: "Upcoming" },
-  { id: "a2", patientName: "Srabon", doctorName: "Dr. Nusrat Jahan", specialty: "Pediatrics", date: "2026-07-05", time: "04:30 PM", status: "Completed" }
+  {
+    id: "a1",
+    patientName: "Sadia Fardeen",
+    doctorName: "Dr. Asif Rahman",
+    specialty: "Cardiology",
+    date: "2026-07-15",
+    time: "10:00 AM",
+    status: "Upcoming",
+  },
+  {
+    id: "a2",
+    patientName: "Srabon",
+    doctorName: "Dr. Nusrat Jahan",
+    specialty: "Pediatrics",
+    date: "2026-07-05",
+    time: "04:30 PM",
+    status: "Completed",
+  },
 ];
 
 export const INITIAL_PRESCRIPTIONS: Prescription[] = [
-  { id: "p1", appointmentId: "a2", patientName: "Srabon", medicines: ["Napa Extend (1+0+1)", "Seclo 20mg (1+0+1)"], notes: "Take rest for 3 days." }
+  {
+    id: "p1",
+    appointmentId: "a2",
+    patientName: "Srabon",
+    medicines: [
+      "Napa Extend (1+0+1)",
+      "Seclo 20mg (1+0+1)",
+    ],
+    notes: "Take rest for 3 days.",
+  },
 ];

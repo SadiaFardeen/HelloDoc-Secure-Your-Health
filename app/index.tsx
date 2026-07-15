@@ -1,4 +1,4 @@
-import { useApp } from "@/context/AppContext";
+import { useApp } from "@/Context/AppContext";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";

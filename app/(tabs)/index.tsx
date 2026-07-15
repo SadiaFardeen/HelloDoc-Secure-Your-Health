@@ -1,42 +1,86 @@
-import { useApp } from "@/context/AppContext";
+import { useRouter } from "expo-router";
 import React from "react";
-import { FlatList, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useApp } from "../../Context/AppContext";
 
 export default function PatientDashboard() {
+  const router = useRouter();
+
   const { appointments, userRole } = useApp();
 
-  const patientAppointments = appointments.filter(
-    (app) => app.status === "Upcoming"
+  const upcomingAppointments = appointments.filter(
+    (item) => item.status === "Upcoming"
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>Hello, Patient 👋</Text>
-        <Text style={styles.roleText}>Role: {userRole}</Text>
+        <Text style={styles.title}>HelloDoc</Text>
+
+        <Text style={styles.subtitle}>
+          Welcome Patient 👋
+        </Text>
+
+        <Text style={styles.role}>
+          Role: {userRole}
+        </Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>Your Upcoming Appointments</Text>
+
+        <Pressable
+          style={styles.bookButton}
+          onPress={() => router.push("/booking")}
+        >
+          <Text style={styles.bookButtonText}>
+            Book Appointment
+          </Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>
+          Upcoming Appointments
+        </Text>
 
         <FlatList
-          data={patientAppointments}
+          data={upcomingAppointments}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.doctorName}>{item.doctorName}</Text>
-                <Text style={styles.statusBadge}>{item.status}</Text>
-              </View>
-              <Text style={styles.specialty}>{item.specialty}</Text>
-              <View style={styles.divider} />
-              <Text style={styles.dateTime}>
-                📅 {item.date}  |  🕒 {item.time}
+              <Text style={styles.doctor}>
+                {item.doctorName}
               </Text>
+
+              <Text style={styles.specialty}>
+                {item.specialty}
+              </Text>
+
+              <Text style={styles.info}>
+                📅 {item.date}
+              </Text>
+
+              <Text style={styles.info}>
+                🕒 {item.time}
+              </Text>
+
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {item.status}
+                </Text>
+              </View>
             </View>
           )}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No upcoming appointments found.</Text>
+            <Text style={styles.empty}>
+              No upcoming appointments.
+            </Text>
           }
         />
       </View>
@@ -45,18 +89,106 @@ export default function PatientDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
-  header: { backgroundColor: "#0D1F4E", padding: 24, borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
-  welcomeText: { fontSize: 24, fontWeight: "bold", color: "#FFFFFF" },
-  roleText: { fontSize: 14, color: "#0D9488", marginTop: 4, fontWeight: "600" },
-  content: { flex: 1, padding: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#1E293B", marginBottom: 16 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  doctorName: { fontSize: 16, fontWeight: "600", color: "#1E293B" },
-  statusBadge: { backgroundColor: "#CCFBF1", color: "#0F766E", fontSize: 12, fontWeight: "600", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: "hidden" },
-  specialty: { fontSize: 14, color: "#64748B", marginTop: 2 },
-  divider: { height: 1, backgroundColor: "#E2E8F0", marginVertical: 12 },
-  dateTime: { fontSize: 13, color: "#475569", fontWeight: "500" },
-  emptyText: { textAlign: "center", color: "#64748B", marginTop: 40, fontSize: 14 }
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+
+  header: {
+    backgroundColor: "#0D9488",
+    padding: 24,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+
+  title: {
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontWeight: "bold",
+  },
+
+  subtitle: {
+    color: "#E6FFFB",
+    marginTop: 5,
+    fontSize: 18,
+  },
+
+  role: {
+    marginTop: 10,
+    color: "#CCFBF1",
+    fontWeight: "600",
+  },
+
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+
+  bookButton: {
+    backgroundColor: "#0D9488",
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  bookButtonText: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "bold",
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 15,
+    color: "#0F172A",
+  },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 15,
+    elevation: 2,
+  },
+
+  doctor: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#0F172A",
+  },
+
+  specialty: {
+    color: "#64748B",
+    marginTop: 4,
+    marginBottom: 10,
+  },
+
+  info: {
+    fontSize: 15,
+    color: "#334155",
+    marginBottom: 5,
+  },
+
+  badge: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+
+  badgeText: {
+    color: "#15803D",
+    fontWeight: "bold",
+  },
+
+  empty: {
+    textAlign: "center",
+    marginTop: 40,
+    color: "#64748B",
+    fontSize: 16,
+  },
 });
