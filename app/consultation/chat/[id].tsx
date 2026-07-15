@@ -1,21 +1,21 @@
 // app/consultation/chat/[id].tsx
 
 import {
-    router,
-    useLocalSearchParams,
+  router,
+  useLocalSearchParams,
 } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 
 import {
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 import MessageBubble from "../../../components/message-bubble";
@@ -23,8 +23,8 @@ import { COLORS } from "../../../constants/theme";
 import { DOCTORS } from "../../../data/doctors";
 
 import {
-    INITIAL_MESSAGES,
-    Message,
+  INITIAL_MESSAGES,
+  Message,
 } from "../../../data/messages";
 
 export default function ConsultationChatScreen() {

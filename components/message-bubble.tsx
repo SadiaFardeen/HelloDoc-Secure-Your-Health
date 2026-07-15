@@ -1,9 +1,9 @@
 // components/message-bubble.tsx
 
 import {
-  StyleSheet,
-  Text,
-  View,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
 import { COLORS } from "../constants/theme";

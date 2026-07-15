@@ -1,314 +1,202 @@
-import { router } from "expo-router";
-import { useState } from "react";
+// app/(tabs)/index.tsx
+
+import { useApp } from "@/context/AppContext";
+import { useRouter } from "expo-router";
+import React from "react";
 
 import {
   FlatList,
+  Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
+export default function PatientDashboard() {
+  const { appointments, userRole } = useApp();
+  const router = useRouter();
 
-import CategoryChip from "../../components/category-chip";
-import DoctorCard from "../../components/doctor-card";
-import SearchBar from "../../components/search-bar";
-
-import { COLORS } from "../../constants/theme";
-
-import {
-  Doctor,
-  DOCTOR_CATEGORIES,
-  DOCTORS,
-} from "../../data/doctors";
-
-export default function HomeScreen() {
-  const [searchText, setSearchText] =
-    useState("");
-
-  const [
-    selectedCategory,
-    setSelectedCategory,
-  ] = useState("All");
-
-  const filteredDoctors = DOCTORS.filter(
-    (doctor) => {
-      const query = searchText
-        .trim()
-        .toLowerCase();
-
-      const matchesSearch =
-        doctor.name
-          .toLowerCase()
-          .includes(query) ||
-        doctor.specialization
-          .toLowerCase()
-          .includes(query) ||
-        doctor.hospital
-          .toLowerCase()
-          .includes(query);
-
-      const matchesCategory =
-        selectedCategory === "All" ||
-        doctor.specialization ===
-          selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    }
+  const patientAppointments = appointments.filter(
+    (app) => app.status === "Upcoming"
   );
 
-  const handleDoctorPress = (
-    doctor: Doctor
-  ) => {
-    router.push({
-      pathname: "/doctor/[id]",
-      params: {
-        id: doctor.id,
-      },
-    });
+  const handleFindDoctor = () => {
+    router.push("/(tabs)/doctor-discovery");
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      {/* Header */}
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-  <View style={styles.headerTopRow}>
-    <View>
-      <Text style={styles.brandName}>
-        HelloDoc
-      </Text>
-
-      <Text style={styles.tagline}>
-        We secure your health
-      </Text>
-    </View>
-
-    <View style={styles.profileCircle}>
-      <Text style={styles.profileText}>
-        P
-      </Text>
-    </View>
-  </View>
-
-  <Text style={styles.welcomeText}>
-    Find the right doctor
-  </Text>
-
-  <Text style={styles.welcomeSubtext}>
-    Search trusted specialists and start a secure
-    consultation.
-  </Text>
-</View>
-
-      {/* Search Bar */}
-
-      <SearchBar
-        value={searchText}
-        onChangeText={setSearchText}
-        placeholder="Search name, speciality or hospital"
-      />
-
-      {/* Category Filter */}
-
-      <View style={styles.categorySection}>
-        <FlatList
-          data={DOCTOR_CATEGORIES}
-          keyExtractor={(item) => item}
-          horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.categoryList
-          }
-          renderItem={({ item }) => (
-            <CategoryChip
-              title={item}
-              selected={
-                selectedCategory === item
-              }
-              onPress={() =>
-                setSelectedCategory(item)
-              }
-            />
-          )}
-        />
+        <Text style={styles.welcomeText}>Hello, Patient 👋</Text>
+        <Text style={styles.roleText}>Role: {userRole}</Text>
       </View>
 
-      {/* Result Count */}
+      <View style={styles.content}>
+        {/* Member 1 Doctor Discovery button */}
+        <Pressable
+          style={styles.findDoctorButton}
+          onPress={handleFindDoctor}
+        >
+          <Text style={styles.findDoctorButtonText}>
+            Find a Doctor
+          </Text>
+        </Pressable>
 
-      <View style={styles.resultHeader}>
-        <Text style={styles.resultText}>
-          {filteredDoctors.length} doctors
-          found
+        <Text style={styles.sectionTitle}>
+          Your Upcoming Appointments
         </Text>
 
-        {selectedCategory !== "All" ? (
-          <Text style={styles.categoryName}>
-            {selectedCategory}
-          </Text>
-        ) : null}
-      </View>
+        <FlatList
+          data={patientAppointments}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.doctorName}>
+                  {item.doctorName}
+                </Text>
 
-      {/* Doctor List */}
+                <Text style={styles.statusBadge}>
+                  {item.status}
+                </Text>
+              </View>
 
-      <FlatList
-        data={filteredDoctors}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <DoctorCard
-            doctor={item}
-            onPress={handleDoctorPress}
-          />
-        )}
-        contentContainerStyle={
-          styles.doctorList
-        }
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>
-              No doctors found
-            </Text>
+              <Text style={styles.specialty}>
+                {item.specialty}
+              </Text>
 
+              <View style={styles.divider} />
+
+              <Text style={styles.dateTime}>
+                📅 {item.date} | 🕒 {item.time}
+              </Text>
+            </View>
+          )}
+          ListEmptyComponent={
             <Text style={styles.emptyText}>
-              Try another name,
-              specialization or category.
+              No upcoming appointments found.
             </Text>
-          </View>
-        }
-      />
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-
-  headerTopRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-},
-
-brandName: {
-  fontSize: 22,
-  fontWeight: "900",
-  color: "#FFFFFF",
-},
-
-tagline: {
-  fontSize: 11,
-  color: "#99F6E4",
-  marginTop: 2,
-},
-
-profileCircle: {
-  width: 42,
-  height: 42,
-  borderRadius: 21,
-  backgroundColor: COLORS.primary,
-  alignItems: "center",
-  justifyContent: "center",
-},
-
-profileText: {
-  color: "#FFFFFF",
-  fontWeight: "800",
-},
-
-welcomeText: {
-  fontSize: 26,
-  fontWeight: "900",
-  color: "#FFFFFF",
-  marginTop: 28,
-},
-
-welcomeSubtext: {
-  fontSize: 13,
-  color: "#D9F9F4",
-  marginTop: 7,
-},
-
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: "#F8FAFC",
   },
 
   header: {
-  backgroundColor: COLORS.secondary,
-  paddingHorizontal: 20,
-  paddingTop: 20,
-  paddingBottom: 26,
-  borderBottomLeftRadius: 28,
-  borderBottomRightRadius: 28,
+    backgroundColor: "#0D1F4E",
+    padding: 24,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
 
-  title: {
+  welcomeText: {
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "bold",
     color: "#FFFFFF",
   },
 
-  subtitle: {
-    fontSize: 13,
-    color: "#CCFBF1",
+  roleText: {
+    fontSize: 14,
+    color: "#0D9488",
     marginTop: 4,
-  },
-
-  categorySection: {
-    backgroundColor: COLORS.surface,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-
-  categoryList: {
-    paddingHorizontal: 16,
-  },
-
-  resultHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-
-  resultText: {
-    fontSize: 13,
     fontWeight: "600",
-    color: COLORS.textSecondary,
   },
 
-  categoryName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
+  content: {
+    flex: 1,
+    padding: 20,
   },
 
-  doctorList: {
-    flexGrow: 1,
-    paddingBottom: 30,
-  },
-
-  emptyBox: {
+  findDoctorButton: {
+    backgroundColor: "#0D9488",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 30,
-    paddingVertical: 80,
+    marginBottom: 20,
   },
 
-  emptyTitle: {
+  findDoctorButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: "#1E293B",
+    marginBottom: 16,
+  },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  doctorName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  statusBadge: {
+    backgroundColor: "#CCFBF1",
+    color: "#0F766E",
+    fontSize: 12,
+    fontWeight: "600",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+
+  specialty: {
+    fontSize: 14,
+    color: "#64748B",
+    marginTop: 2,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#E2E8F0",
+    marginVertical: 12,
+  },
+
+  dateTime: {
+    fontSize: 13,
+    color: "#475569",
+    fontWeight: "500",
   },
 
   emptyText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
     textAlign: "center",
-    lineHeight: 20,
-    marginTop: 8,
+    color: "#64748B",
+    marginTop: 40,
+    fontSize: 14,
   },
 });
