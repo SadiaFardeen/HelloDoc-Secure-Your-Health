@@ -5,12 +5,12 @@ import {
 
 import {
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomButton from "../../components/custom-button";
 import { COLORS } from "../../constants/theme";
