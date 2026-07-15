@@ -49,6 +49,14 @@ export default function ConfirmationScreen() {
 
   return (
     <View style={styles.container}>
+
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backText}>← Back</Text>
+      </Pressable>
+
       <Text style={styles.title}>Appointment Summary</Text>
 
       <View style={styles.card}>
@@ -79,6 +87,7 @@ export default function ConfirmationScreen() {
           Confirm Appointment
         </Text>
       </Pressable>
+
     </View>
   );
 }
@@ -88,6 +97,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
     padding: 20,
+  },
+
+  backButton: {
+    width: 90,
+    backgroundColor: "#E2F7F5",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  backText: {
+    color: "#0D9488",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 
   title: {

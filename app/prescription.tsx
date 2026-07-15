@@ -71,21 +71,17 @@ export default function PrescriptionScreen() {
       id: Date.now().toString(),
       appointmentId: String(appointmentId),
       patientName: String(patientName),
-      medicines: [
-        `${form.medicine} (${form.dosage})`,
-      ],
-      notes:
-        `${form.instructions}\n\n${form.notes}`,
+      medicines: [`${form.medicine} (${form.dosage})`],
+      notes: `${form.instructions}\n\n${form.notes}`,
     });
 
     Alert.alert(
       "Success",
-      "Prescription Saved",
+      "Prescription Saved Successfully",
       [
         {
           text: "OK",
-          onPress: () =>
-            router.replace("/prescriptions"),
+          onPress: () => router.replace("/prescriptions"),
         },
       ]
     );
@@ -93,8 +89,20 @@ export default function PrescriptionScreen() {
 
   return (
     <View style={styles.container}>
+
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backText}>← Back</Text>
+      </Pressable>
+
       <Text style={styles.title}>
         Digital Prescription
+      </Text>
+
+      <Text style={styles.patient}>
+        Patient: {patientName}
       </Text>
 
       <TextInput
@@ -164,7 +172,7 @@ export default function PrescriptionScreen() {
       ) : null}
 
       <TextInput
-        style={[styles.input, { height: 120 }]}
+        style={[styles.input, styles.notesInput]}
         multiline
         placeholder="Notes"
         value={form.notes}
@@ -185,53 +193,82 @@ export default function PrescriptionScreen() {
           Save Prescription
         </Text>
       </Pressable>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:{
-    flex:1,
-    backgroundColor:"#F8FAFC",
-    padding:20
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    padding: 20,
   },
 
-  title:{
-    fontSize:28,
-    fontWeight:"bold",
-    marginBottom:20
+  backButton: {
+    width: 90,
+    backgroundColor: "#E2F7F5",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 15,
   },
 
-  input:{
-    backgroundColor:"#fff",
-    borderWidth:1,
-    borderColor:"#CBD5E1",
-    borderRadius:10,
-    padding:14,
-    marginBottom:10
+  backText: {
+    color: "#0D9488",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 
-  error:{
-    color:"red",
-    marginBottom:8
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#0F172A",
+    marginBottom: 8,
   },
 
-  counter:{
-    textAlign:"right",
-    color:"#64748B",
-    marginBottom:20
+  patient: {
+    fontSize: 16,
+    color: "#0D9488",
+    fontWeight: "600",
+    marginBottom: 20,
   },
 
-  button:{
-    backgroundColor:"#0D9488",
-    padding:16,
-    borderRadius:10,
-    alignItems:"center"
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
   },
 
-  buttonText:{
-    color:"#fff",
-    fontWeight:"bold",
-    fontSize:16
-  }
+  notesInput: {
+    height: 120,
+    textAlignVertical: "top",
+  },
+
+  error: {
+    color: "#EF4444",
+    marginBottom: 8,
+  },
+
+  counter: {
+    textAlign: "right",
+    color: "#64748B",
+    marginBottom: 20,
+  },
+
+  button: {
+    backgroundColor: "#0D9488",
+    padding: 16,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });

@@ -52,6 +52,14 @@ export default function SlotScreen() {
 
   return (
     <View style={styles.container}>
+
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backText}>← Back</Text>
+      </Pressable>
+
       <Text style={styles.title}>Select Time Slot</Text>
 
       <Text style={styles.info}>Doctor: {doctorName}</Text>
@@ -95,6 +103,7 @@ export default function SlotScreen() {
       >
         <Text style={styles.buttonText}>Continue</Text>
       </Pressable>
+
     </View>
   );
 }
@@ -106,10 +115,26 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
+  backButton: {
+    width: 90,
+    backgroundColor: "#E2F7F5",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  backText: {
+    color: "#0D9488",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
   title: {
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 15,
+    color: "#0F172A",
   },
 
   info: {
@@ -127,7 +152,7 @@ const styles = StyleSheet.create({
   },
 
   slot: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -146,7 +171,7 @@ const styles = StyleSheet.create({
   },
 
   selectedText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
 
@@ -159,7 +184,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
   },

@@ -44,6 +44,14 @@ export default function BookingScreen() {
 
   return (
     <View style={styles.container}>
+
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backText}>← Back</Text>
+      </Pressable>
+
       <Text style={styles.title}>Book Appointment</Text>
 
       <TextInput
@@ -116,6 +124,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
     padding: 20,
+  },
+
+  backButton: {
+    width: 90,
+    backgroundColor: "#E2F7F5",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  backText: {
+    color: "#0D9488",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 
   title: {
