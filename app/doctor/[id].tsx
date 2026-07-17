@@ -63,6 +63,18 @@ export default function DoctorDetailsScreen() {
       },
     });
   };
+  
+  const handleBookAppointment = () => {
+    router.push({
+      pathname: "/(tabs)/booking",
+      params: {
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      specialty: doctor.specialization,
+      fee: doctor.fee.toString(),
+    },
+  });
+};
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -180,6 +192,12 @@ export default function DoctorDetailsScreen() {
           title="Start Consultation"
           onPress={handleStartConsultation}
           style={styles.startButton}
+        />
+        <CustomButton
+          title="Book Appointment"
+          variant="outline"
+          onPress={handleBookAppointment}
+          style={styles.bookButton}
         />
       </ScrollView>
     </SafeAreaView>
@@ -363,6 +381,10 @@ const styles = StyleSheet.create({
 
   startButton: {
     marginTop: 18,
+  },
+
+  bookButton: {
+    marginTop: 10,
   },
 
   notFoundContainer: {
