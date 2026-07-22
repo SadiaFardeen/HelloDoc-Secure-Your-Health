@@ -22,7 +22,7 @@ export default function PatientDashboard() {
   );
 
   const handleFindDoctor = () => {
-    router.push("/(tabs)/doctor-discovery");
+    router.push("../(tabs)/doctor-discovery");
   };
 
   return (

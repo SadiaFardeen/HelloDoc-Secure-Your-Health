@@ -61,7 +61,7 @@ export default function HomeScreen() {
     doctor: Doctor
   ) => {
     router.push({
-      pathname: "/doctor/[id]",
+      pathname: "../doctor/[id]",
       params: {
         id: doctor.id,
       },
