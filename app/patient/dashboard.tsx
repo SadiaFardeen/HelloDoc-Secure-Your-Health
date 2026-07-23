@@ -10,7 +10,10 @@ export default function PatientDashboard() {
       <Text style={styles.subText}>How can we help you today?</Text>
 
       <View style={styles.grid}>
-        <TouchableOpacity style={styles.card}>
+        <TouchableOpacity 
+          style={styles.card} 
+          onPress={() => router.push('/patient/doctors')}
+        >
           <Text style={styles.cardTitle}>🔍 Find Doctor</Text>
           <Text style={styles.cardDesc}>Search specialists near you</Text>
         </TouchableOpacity>
