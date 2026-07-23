@@ -1,11 +1,5 @@
-// app/consultation/chat/[id].tsx
-
-import {
-  router,
-  useLocalSearchParams,
-} from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -20,35 +14,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import MessageBubble from "../../../components/message-bubble";
 import { COLORS } from "../../../constants/theme";
-import { DOCTORS } from "../../../data/doctors";
-
-import {
-  INITIAL_MESSAGES,
-  Message,
-} from "../../../data/messages";
+import { INITIAL_MESSAGES, Message } from "../../../data/messages";
 
 export default function ConsultationChatScreen() {
   const params = useLocalSearchParams();
 
-  const id = Array.isArray(params.id)
-    ? params.id[0]
-    : params.id;
+  const isDoctorView = params.role === "doctor";
+  const patientName = (Array.isArray(params.name) ? params.name[0] : params.name) || "Rahim Ahmed";
 
-  const doctor = DOCTORS.find(
-    (item) => item.id === id
-  );
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messageText, setMessageText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
-  const [messages, setMessages] =
-    useState<Message[]>(INITIAL_MESSAGES);
-
-  const [messageText, setMessageText] =
-    useState("");
-
-  const [isDoctorTyping, setIsDoctorTyping] =
-    useState(false);
-
-  const listReference =
-    useRef<FlatList<Message>>(null);
+  const listReference = useRef<FlatList<Message>>(null);
 
   const getCurrentTime = () => {
     return new Date().toLocaleTimeString([], {
@@ -59,138 +37,86 @@ export default function ConsultationChatScreen() {
 
   const handleSendMessage = () => {
     const cleanedMessage = messageText.trim();
+    if (cleanedMessage.length === 0) return;
 
-    if (cleanedMessage.length === 0) {
-      return;
-    }
-
-    const patientMessage: Message = {
+    const newMessage: Message = {
       id: Date.now().toString(),
-      sender: "patient",
+      sender: isDoctorView ? "doctor" : "patient",
       text: cleanedMessage,
       time: getCurrentTime(),
     };
 
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      patientMessage,
-    ]);
-
+    setMessages((previousMessages) => [...previousMessages, newMessage]);
     setMessageText("");
-    setIsDoctorTyping(true);
+    setIsTyping(true);
   };
 
   useEffect(() => {
-    if (!isDoctorTyping) {
-      return;
-    }
+    if (!isTyping) return;
 
     const timeout = setTimeout(() => {
-      const doctorMessage: Message = {
+      const autoReplyMessage: Message = {
         id: Date.now().toString(),
-        sender: "doctor",
-        text:
-          "Thank you for sharing that. How long have you been experiencing this problem?",
+        sender: isDoctorView ? "patient" : "doctor",
+        text: isDoctorView
+          ? "Thank you Doctor. I am taking the prescribed medicine regularly."
+          : "Thank you for sharing that. How long have you been experiencing this problem?",
         time: getCurrentTime(),
       };
 
-      setMessages((previousMessages) => [
-        ...previousMessages,
-        doctorMessage,
-      ]);
-
-      setIsDoctorTyping(false);
+      setMessages((previousMessages) => [...previousMessages, autoReplyMessage]);
+      setIsTyping(false);
     }, 1500);
 
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [isDoctorTyping]);
+    return () => clearTimeout(timeout);
+  }, [isTyping, isDoctorView]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      listReference.current?.scrollToEnd({
-        animated: true,
-      });
+      listReference.current?.scrollToEnd({ animated: true });
     }, 100);
 
-    return () => {
-      clearTimeout(timeout);
-    };
+    return () => clearTimeout(timeout);
   }, [messages]);
-
-  if (!doctor) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.notFoundContainer}>
-          <Text style={styles.notFoundTitle}>
-            Doctor not found
-          </Text>
-
-          <Text
-            style={styles.backText}
-            onPress={() => router.back()}
-          >
-            Go Back
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.screen}>
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={10}
-    >
-        {/* Chat Header */}
-
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={10}
+      >
         <View style={styles.header}>
-          <Text
-            style={styles.headerBackText}
-            onPress={() => router.back()}
-          >
+          <Text style={styles.headerBackText} onPress={() => router.back()}>
             ‹ Back
           </Text>
 
           <View style={styles.headerInformation}>
             <Text style={styles.doctorName}>
-              {doctor.name}
+              {isDoctorView ? patientName : "Dr. Farhana Rahman"}
             </Text>
 
-            <Text style={styles.onlineText}>
-              ● Online
-            </Text>
+            <Text style={styles.onlineText}>● Online</Text>
           </View>
         </View>
-
-        {/* Message List */}
 
         <FlatList
           ref={listReference}
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MessageBubble message={item} />
-          )}
-          contentContainerStyle={
-            styles.messageList
-          }
+          renderItem={({ item }) => <MessageBubble message={item} />}
+          contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
-            isDoctorTyping ? (
+            isTyping ? (
               <View style={styles.typingBubble}>
                 <Text style={styles.typingText}>
-                  {doctor.name} is typing...
+                  {isDoctorView ? patientName : "Doctor"} is typing...
                 </Text>
               </View>
             ) : null
           }
         />
-
-        {/* Message Input */}
 
         <View style={styles.inputSection}>
           <View style={styles.inputRow}>
@@ -199,9 +125,7 @@ export default function ConsultationChatScreen() {
               value={messageText}
               onChangeText={setMessageText}
               placeholder="Write your message..."
-              placeholderTextColor={
-                COLORS.textMuted
-              }
+              placeholderTextColor={COLORS.textMuted}
               multiline
               maxLength={500}
             />
@@ -209,23 +133,16 @@ export default function ConsultationChatScreen() {
             <Pressable
               style={[
                 styles.sendButton,
-                messageText.trim().length === 0 &&
-                  styles.disabledButton,
+                messageText.trim().length === 0 && styles.disabledButton,
               ]}
               onPress={handleSendMessage}
-              disabled={
-                messageText.trim().length === 0
-              }
+              disabled={messageText.trim().length === 0}
             >
-              <Text style={styles.sendText}>
-                Send
-              </Text>
+              <Text style={styles.sendText}>Send</Text>
             </Pressable>
           </View>
 
-          <Text style={styles.characterCount}>
-            {messageText.length}/500
-          </Text>
+          <Text style={styles.characterCount}>{messageText.length}/500</Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -233,15 +150,8 @@ export default function ConsultationChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  keyboardContainer: {
-    flex: 1,
-  },
-
+  screen: { flex: 1, backgroundColor: COLORS.background },
+  keyboardContainer: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -249,38 +159,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-
   headerBackText: {
     fontSize: 15,
     fontWeight: "600",
     color: "#CCFBF1",
     marginRight: 16,
   },
-
-  headerInformation: {
-    flex: 1,
-  },
-
-  doctorName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-
-  onlineText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#86EFAC",
-    marginTop: 3,
-  },
-
+  headerInformation: { flex: 1 },
+  doctorName: { fontSize: 17, fontWeight: "700", color: "#FFFFFF" },
+  onlineText: { fontSize: 11, fontWeight: "600", color: "#86EFAC", marginTop: 3 },
   messageList: {
     flexGrow: 1,
     paddingHorizontal: 14,
     paddingTop: 18,
     paddingBottom: 12,
   },
-
   typingBubble: {
     alignSelf: "flex-start",
     backgroundColor: COLORS.surface,
@@ -291,13 +184,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10,
   },
-
-  typingText: {
-    fontSize: 12,
-    fontStyle: "italic",
-    color: COLORS.textSecondary,
-  },
-
+  typingText: { fontSize: 12, fontStyle: "italic", color: COLORS.textSecondary },
   inputSection: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
@@ -306,12 +193,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 8,
   },
-
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-  },
-
+  inputRow: { flexDirection: "row", alignItems: "flex-end" },
   input: {
     flex: 1,
     minHeight: 46,
@@ -326,7 +208,6 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     textAlignVertical: "top",
   },
-
   sendButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,
@@ -334,40 +215,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginLeft: 8,
   },
-
-  disabledButton: {
-    backgroundColor: COLORS.disabled,
-  },
-
-  sendText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-
+  disabledButton: { backgroundColor: COLORS.disabled },
+  sendText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
   characterCount: {
     fontSize: 10,
     color: COLORS.textMuted,
     marginTop: 5,
     marginLeft: 4,
-  },
-
-  notFoundContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  notFoundTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
-
-  backText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.primary,
-    marginTop: 14,
   },
 });
