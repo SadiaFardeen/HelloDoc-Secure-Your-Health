@@ -5,12 +5,12 @@ import { useRouter } from "expo-router";
 import React from "react";
 
 import {
-    FlatList,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  FlatList,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 export default function PatientDashboard() {
