@@ -1,39 +1,45 @@
-import React, { createContext, useContext, useState } from "react";
-import { Appointment, INITIAL_APPOINTMENTS, INITIAL_PRESCRIPTIONS, Prescription } from "../data/mockData";
+import React, { createContext, useContext, useState } from 'react';
+
+export interface Appointment {
+  id: string;
+  doctorName: string;
+  specialty: string;
+  date: string;
+  time: string;
+  status: string;
+}
+
 interface AppContextType {
-  userRole: "Patient" | "Doctor";
-  setUserRole: (role: "Patient" | "Doctor") => void;
+  userRole?: string;
   appointments: Appointment[];
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
-  prescriptions: Prescription[];
-  setPrescriptions: React.Dispatch<React.SetStateAction<Prescription[]>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [userRole, setUserRole] = useState<"Patient" | "Doctor">("Patient");
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>(INITIAL_PRESCRIPTIONS);
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [userRole] = useState('Patient');
+  const [appointments] = useState<Appointment[]>([
+    {
+      id: '1',
+      doctorName: 'Dr. Sarah Ahmed',
+      specialty: 'Cardiology',
+      date: '2026-08-01',
+      time: '10:00 AM',
+      status: 'Upcoming',
+    },
+  ]);
 
   return (
-    <AppContext.Provider value={{
-      userRole,
-      setUserRole,
-      appointments,
-      setAppointments,
-      prescriptions,
-      setPrescriptions
-    }}>
+    <AppContext.Provider value={{ userRole, appointments }}>
       {children}
     </AppContext.Provider>
   );
-}
+};
 
-export function useApp() {
+export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) {
-    throw new Error("useApp must be used within an AppProvider");
+    return { userRole: 'Patient', appointments: [] };
   }
   return context;
-}
+};

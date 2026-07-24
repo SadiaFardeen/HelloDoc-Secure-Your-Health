@@ -16,6 +16,10 @@ export default function DoctorListScreen() {
     return matchesCategory && matchesSearch;
   });
 
+  const handleStartChat = (doctorId: string, doctorName: string) => {
+    router.push(`/consultation/chat/${doctorId}?role=patient&name=${encodeURIComponent(doctorName)}`);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -63,6 +67,13 @@ export default function DoctorListScreen() {
                 <Text style={styles.rating}>⭐ {item.rating}</Text>
                 <Text style={styles.fee}>৳{item.fee}</Text>
               </View>
+              
+              <TouchableOpacity 
+                style={styles.chatBtn} 
+                onPress={() => handleStartChat(item.id, item.name)}
+              >
+                <Text style={styles.chatBtnText}>💬 Consult Now</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -90,5 +101,7 @@ const styles = StyleSheet.create({
   subInfo: { fontSize: 12, color: '#64748b' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
   rating: { fontSize: 13, fontWeight: 'bold', color: '#f59e0b' },
-  fee: { fontSize: 14, fontWeight: 'bold', color: '#16a34a' }
+  fee: { fontSize: 14, fontWeight: 'bold', color: '#16a34a' },
+  chatBtn: { marginTop: 8, backgroundColor: '#0f766e', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, alignSelf: 'flex-start' },
+  chatBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 12 }
 });

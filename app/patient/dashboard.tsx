@@ -1,49 +1,86 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
+import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const DOCTORS = [
+  { id: 'doc1', name: 'Dr. Sarah Ahmed', specialty: 'Cardiology' },
+  { id: 'doc2', name: 'Dr. Tanvir Hassan', specialty: 'Dermatology' },
+];
 
 export default function PatientDashboard() {
+  const { patientId = 'pat2', patientName = 'Rahim Uddin' } = useLocalSearchParams<{
+    patientId?: string;
+    patientName?: string;
+  }>();
   const router = useRouter();
 
+  const openChatWithDoctor = (doctorId: string, doctorName: string) => {
+
+    const roomId = [doctorId, patientId].sort().join('_');
+
+    router.push({
+      pathname: '/consultation/chat/[id]',
+      params: {
+        id: roomId,
+        currentUserId: patientId,
+        targetName: doctorName,
+      },
+    });
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.welcomeText}>Hello, Patient 👋</Text>
-      <Text style={styles.subText}>How can we help you today?</Text>
-
-      <View style={styles.grid}>
-        <TouchableOpacity 
-          style={styles.card} 
-          onPress={() => router.push('/patient/doctors')}
-        >
-          <Text style={styles.cardTitle}>🔍 Find Doctor</Text>
-          <Text style={styles.cardDesc}>Search specialists near you</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>📅 Appointments</Text>
-          <Text style={styles.cardDesc}>Check scheduled visits</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>📄 Prescriptions</Text>
-          <Text style={styles.cardDesc}>View medical records</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.welcomeText}>Hello, {patientName} 👋</Text>
+        <Text style={styles.subtitle}>Patient ID: {patientId}</Text>
       </View>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={() => router.replace('/')}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      <View style={styles.content}>
+        <Text style={styles.sectionTitle}>Available Doctors</Text>
+
+        <FlatList
+          data={DOCTORS}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.doctorCard}>
+              <View>
+                <Text style={styles.doctorName}>{item.name}</Text>
+                <Text style={styles.specialty}>{item.specialty}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.chatBtn}
+                onPress={() => openChatWithDoctor(item.id, item.name)}
+              >
+                <Text style={styles.chatBtnText}>Message</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f8f9fa' },
-  welcomeText: { fontSize: 24, fontWeight: 'bold', marginTop: 20 },
-  subText: { color: '#666', marginBottom: 20 },
-  grid: { gap: 15 },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 12, elevation: 2 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
-  cardDesc: { color: '#777' },
-  logoutBtn: { marginTop: 30, padding: 15, backgroundColor: '#dc3545', borderRadius: 8, alignItems: 'center' },
-  logoutText: { color: '#fff', fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { backgroundColor: '#0D1F4E', padding: 24 },
+  welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF' },
+  subtitle: { fontSize: 14, color: '#0D9488', marginTop: 4 },
+  content: { flex: 1, padding: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B', marginBottom: 16 },
+  doctorCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    elevation: 2,
+  },
+  doctorName: { fontSize: 16, fontWeight: '600', color: '#0F172A' },
+  specialty: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  chatBtn: { backgroundColor: '#0284C7', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
+  chatBtnText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 13 },
 });

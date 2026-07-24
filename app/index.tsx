@@ -1,118 +1,148 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { DOCTORS } from '../data/doctors';
+import { PATIENTS } from '../data/patient';
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const [role, setRole] = useState<'patient' | 'doctor'>('patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const router = useRouter();
 
   const handleLogin = () => {
-    setErrorMsg('');
+    const cleanEmail = email.trim().toLowerCase();
 
-    if (!email || !password) {
-      setErrorMsg('Please enter both email and password.');
+    if (!cleanEmail) {
+      alert('Please enter your email');
       return;
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const matchedDoctor = DOCTORS.find((d) => d.email.toLowerCase() === cleanEmail);
 
-    if (role === 'patient') {
-      if (cleanEmail.includes('doctor')) {
-        setErrorMsg('This email belongs to a Doctor account. Please switch to Doctor login.');
-        return;
-      }
-      router.replace('/patient/dashboard');
-    } else if (role === 'doctor') {
-      if (cleanEmail.includes('patient')) {
-        setErrorMsg('This email belongs to a Patient account. Please switch to Patient login.');
-        return;
-      }
-      router.replace('/doctorDashboard/dashboard');
+    if (matchedDoctor) {
+      router.replace({
+        pathname: '/doctorDashboard/dashboard',
+        params: { doctorId: matchedDoctor.id, doctorName: matchedDoctor.name, doctorEmail: matchedDoctor.email }
+      });
+      return;
     }
+
+    const matchedPatient = PATIENTS.find((p) => p.email.toLowerCase() === cleanEmail);
+
+    if (matchedPatient) {
+      router.replace({
+        pathname: '/patient/dashboard',
+        params: { patientId: matchedPatient.id, patientName: matchedPatient.name, patientEmail: matchedPatient.email }
+      });
+      return;
+    }
+
+    alert('Account not found! Use a valid Doctor or Patient email.');
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>
-          Hello<Text style={styles.titleHighlight}>Doc</Text>
-        </Text>
-        <Text style={styles.subtitle}>Welcome back! Please login to continue.</Text>
-      </View>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      style={styles.container}
+    >
+      <View style={styles.card}>
+        <Text style={styles.title}>HelloDoc 🩺</Text>
+        <Text style={styles.subtitle}>Welcome back! Please login to your account.</Text>
 
-      <View style={styles.roleContainer}>
-        <TouchableOpacity 
-          style={[styles.roleBtn, role === 'patient' && styles.activeRole]}
-          onPress={() => {
-            setRole('patient');
-            setErrorMsg('');
-          }}
-        >
-          <Text style={role === 'patient' ? styles.activeText : styles.roleText}>Patient</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Email Address</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="enter your email..."
+            placeholderTextColor="#94a3b8"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#94a3b8"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+        </View>
+
+        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+          <Text style={styles.loginBtnText}>Login</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.roleBtn, role === 'doctor' && styles.activeRole]}
-          onPress={() => {
-            setRole('doctor');
-            setErrorMsg('');
-          }}
-        >
-          <Text style={role === 'doctor' ? styles.activeText : styles.roleText}>Doctor</Text>
-        </TouchableOpacity>
       </View>
-
-      {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
-
-      <TextInput 
-        style={styles.input} 
-        placeholder={role === 'patient' ? "Patient Email (e.g. patient@mail.com)" : "Doctor Email (e.g. doctor@mail.com)"} 
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-      />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Password" 
-        secureTextEntry 
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-        <Text style={styles.loginBtnText}>Login as {role === 'patient' ? 'Patient' : 'Doctor'}</Text>
-      </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 25, justifyContent: 'center', backgroundColor: '#fff' },
-  headerContainer: { alignItems: 'center', marginBottom: 30 },
-  title: { 
-    fontSize: 36, 
-    fontWeight: '800', 
-    color: '#1e293b', 
-    letterSpacing: 0.5 
+  container: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  titleHighlight: { 
-    color: '#0284c7' 
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  subtitle: { 
-    fontSize: 14, 
-    color: '#64748b', 
-    marginTop: 6 
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#0f766e',
+    textAlign: 'center',
+    marginBottom: 6,
   },
-  roleContainer: { flexDirection: 'row', marginBottom: 15, borderRadius: 8, backgroundColor: '#f0f0f0', padding: 4 },
-  roleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
-  activeRole: { backgroundColor: '#0284c7' },
-  roleText: { color: '#666', fontWeight: '600' },
-  activeText: { color: '#fff', fontWeight: '600' },
-  errorText: { color: '#dc3545', textAlign: 'center', marginBottom: 15, fontWeight: '600' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 15 },
-  loginBtn: { backgroundColor: '#0284c7', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 5 },
-  loginBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  subtitle: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#0f172a',
+  },
+  loginBtn: {
+    backgroundColor: '#0284c7',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  loginBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

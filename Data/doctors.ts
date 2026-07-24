@@ -1,191 +1,148 @@
-
 export interface Doctor {
   id: string;
   name: string;
+  email: string;
   specialization: string;
   qualification: string;
-  experience: number;
   hospital: string;
   location: string;
-  fee: number;
+  experience: number;
   rating: number;
-  availability: string;
+  fee: number;
   imageUrl: string;
-  about: string;
-  languages: string[];
 }
 
 export const DOCTORS: Doctor[] = [
   {
-    id: "1",
-    name: "Dr. Farhana Rahman",
-    specialization: "Medicine",
-    qualification: "MBBS, FCPS (Medicine)",
-    experience: 12,
-    hospital: "United Hospital",
-    location: "Gulshan, Dhaka",
-    fee: 1200,
-    rating: 4.9,
-    availability: "Available Today",
-    imageUrl: "https://i.pravatar.cc/300?img=47",
-    about:
-      "Dr. Farhana Rahman is an experienced medicine specialist. She provides consultation for fever, infections, diabetes, blood pressure and general health conditions.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "2",
-    name: "Dr. Mahmud Hasan",
-    specialization: "Cardiology",
-    qualification: "MBBS, MD (Cardiology)",
-    experience: 15,
-    hospital: "Square Hospital",
-    location: "Panthapath, Dhaka",
-    fee: 1500,
-    rating: 4.8,
-    availability: "Available Tomorrow",
-    imageUrl: "https://i.pravatar.cc/300?img=12",
-    about:
-      "Dr. Mahmud Hasan specialises in heart disease, high blood pressure, chest pain and preventive cardiac care.",
-    languages: ["Bangla", "English", "Hindi"],
-  },
-  {
-    id: "3",
-    name: "Dr. Nusrat Jahan",
-    specialization: "Dermatology",
-    qualification: "MBBS, DDV",
-    experience: 9,
-    hospital: "Popular Diagnostic Centre",
-    location: "Dhanmondi, Dhaka",
-    fee: 1000,
-    rating: 4.7,
-    availability: "Available Today",
-    imageUrl: "https://i.pravatar.cc/300?img=32",
-    about:
-      "Dr. Nusrat Jahan treats acne, allergies, hair loss, skin infections and other dermatological conditions.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "4",
-    name: "Dr. Adnan Karim",
-    specialization: "Neurology",
-    qualification: "MBBS, MD (Neurology)",
-    experience: 14,
-    hospital: "Evercare Hospital",
-    location: "Bashundhara, Dhaka",
-    fee: 1600,
-    rating: 4.9,
-    availability: "Available Saturday",
-    imageUrl: "https://i.pravatar.cc/300?img=11",
-    about:
-      "Dr. Adnan Karim provides treatment for migraine, stroke, epilepsy, nerve disorders and chronic headaches.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "5",
-    name: "Dr. Samira Islam",
-    specialization: "Pediatrics",
-    qualification: "MBBS, FCPS (Pediatrics)",
-    experience: 11,
-    hospital: "Dhaka Shishu Hospital",
-    location: "Shyamoli, Dhaka",
-    fee: 1100,
-    rating: 4.8,
-    availability: "Available Today",
-    imageUrl: "https://i.pravatar.cc/300?img=44",
-    about:
-      "Dr. Samira Islam is a child specialist providing care for newborns, children and adolescents.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "6",
-    name: "Dr. Tasnim Ahmed",
-    specialization: "Gynecology",
-    qualification: "MBBS, FCPS (Gynecology)",
-    experience: 13,
-    hospital: "Labaid Specialized Hospital",
-    location: "Dhanmondi, Dhaka",
-    fee: 1400,
-    rating: 4.9,
-    availability: "Available Tomorrow",
-    imageUrl: "https://i.pravatar.cc/300?img=49",
-    about:
-      "Dr. Tasnim Ahmed provides women's healthcare, pregnancy consultation and treatment for gynecological conditions.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "7",
-    name: "Dr. Imran Hossain",
-    specialization: "Orthopedics",
-    qualification: "MBBS, MS (Orthopedics)",
+    id: 'doc1',
+    name: 'Dr. Sarah Ahmed',
+    email: 'doc1@hellodoc.com',
+    specialization: 'Cardiology',
+    qualification: 'MBBS, FCPS',
+    hospital: 'Square Hospital',
+    location: 'Dhaka',
     experience: 10,
-    hospital: "Ibn Sina Hospital",
-    location: "Kallyanpur, Dhaka",
-    fee: 1200,
-    rating: 4.6,
-    availability: "Available Sunday",
-    imageUrl: "https://i.pravatar.cc/300?img=33",
-    about:
-      "Dr. Imran Hossain treats bone fractures, joint pain, arthritis, sports injuries and spinal conditions.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "8",
-    name: "Dr. Rafia Sultana",
-    specialization: "Medicine",
-    qualification: "MBBS, MRCP",
-    experience: 8,
-    hospital: "Anwer Khan Modern Hospital",
-    location: "Dhanmondi, Dhaka",
-    fee: 900,
-    rating: 4.5,
-    availability: "Available Today",
-    imageUrl: "https://i.pravatar.cc/300?img=45",
-    about:
-      "Dr. Rafia Sultana provides primary medical care and treatment for common and chronic health conditions.",
-    languages: ["Bangla", "English"],
-  },
-  {
-    id: "9",
-    name: "Dr. Md. Nur Nobi",
-    specialization: "Dermatology",
-    qualification: "MBBS, MRCP",
-    experience: 15,
-    hospital: "Badda General Hospital",
-    location: "Badda, Dhaka",
-    fee: 1000,
     rating: 4.9,
-    availability: "Available Today",
-    imageUrl: "https://i.pravatar.cc/300?img=01",
-    about:
-      "Dr. Md. Nur Nobi provides primary medical care and treatment for skin and venereal diseases.",
-    languages: ["Bangla", "English"],
+    fee: 1000,
+    imageUrl: 'https://via.placeholder.com/150'
   },
   {
-    id: "10",
-    name: "Dr. Ayesha Khan",
-    specialization: "ENT",
-    qualification: "MBBS, FCPS (ENT)",
-    experience: 12,
-    hospital: "Dhaka Medical College Hospital",
-    location: "Dhanmondi, Dhaka",
-    fee: 1300,
+    id: 'doc2',
+    name: 'Dr. Tanvir Hassan',
+    email: 'doc2@hellodoc.com',
+    specialization: 'Dermatology',
+    qualification: 'MBBS, MD',
+    hospital: 'Labaid Hospital',
+    location: 'Dhaka',
+    experience: 8,
     rating: 4.8,
-    availability: "Available Tomorrow",
-    imageUrl: "https://i.pravatar.cc/300?img=46",
-    about:
-      "Dr. Ayesha Khan provides specialized care for ear, nose and throat conditions.",
-    languages: ["Bangla", "English"],
+    fee: 800,
+    imageUrl: 'https://via.placeholder.com/150'
   },
+  {
+    id: 'doc3',
+    name: 'Dr. Nusrat Jahan',
+    email: 'doc3@hellodoc.com',
+    specialization: 'Pediatrics',
+    qualification: 'MBBS, DCH',
+    hospital: 'United Hospital',
+    location: 'Dhaka',
+    experience: 6,
+    rating: 4.7,
+    fee: 700,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc4',
+    name: 'Dr. Mahmud Hassan',
+    email: 'doc4@hellodoc.com',
+    specialization: 'Neurology',
+    qualification: 'MBBS, FCPS (Neuro)',
+    hospital: 'Evercare Hospital',
+    location: 'Dhaka',
+    experience: 12,
+    rating: 4.9,
+    fee: 1200,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc5',
+    name: 'Dr. Rina Sultana',
+    email: 'doc5@hellodoc.com',
+    specialization: 'Gynecology',
+    qualification: 'MBBS, MS',
+    hospital: 'Ibn Sina Hospital',
+    location: 'Dhaka',
+    experience: 9,
+    rating: 4.8,
+    fee: 900,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc6',
+    name: 'Dr. Farhan Ali',
+    email: 'doc6@hellodoc.com',
+    specialization: 'Orthopedics',
+    qualification: 'MBBS, MS (Ortho)',
+    hospital: 'Popular Diagnostic',
+    location: 'Dhaka',
+    experience: 11,
+    rating: 4.7,
+    fee: 1000,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc7',
+    name: 'Dr. Ayesha Karim',
+    email: 'doc7@hellodoc.com',
+    specialization: 'Medicine',
+    qualification: 'MBBS, FCPS',
+    hospital: 'BD Korea Hospital',
+    location: 'Dhaka',
+    experience: 7,
+    rating: 4.6,
+    fee: 800,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc8',
+    name: 'Dr. Kamrul Islam',
+    email: 'doc8@hellodoc.com',
+    specialization: 'ENT',
+    qualification: 'MBBS, DLO',
+    hospital: 'BRB Hospital',
+    location: 'Dhaka',
+    experience: 10,
+    rating: 4.8,
+    fee: 850,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc9',
+    name: 'Dr. Sabina Yasmin',
+    email: 'doc9@hellodoc.com',
+    specialization: 'Ophthalmology',
+    qualification: 'MBBS, DO',
+    hospital: 'Fashion Eye Hospital',
+    location: 'Dhaka',
+    experience: 5,
+    rating: 4.5,
+    fee: 600,
+    imageUrl: 'https://via.placeholder.com/150'
+  },
+  {
+    id: 'doc10',
+    name: 'Dr. Rafiqul Alam',
+    email: 'doc10@hellodoc.com',
+    specialization: 'Psychiatry',
+    qualification: 'MBBS, MD (Psych)',
+    hospital: 'Mental Health Center',
+    location: 'Dhaka',
+    experience: 14,
+    rating: 5.0,
+    fee: 1500,
+    imageUrl: 'https://via.placeholder.com/150'
+  }
 ];
 
-export const DOCTOR_CATEGORIES: string[] = [
-  "All",
-  "Medicine",
-  "Cardiology",
-  "Dermatology",
-  "Neurology",
-  "Pediatrics",
-  "Gynecology",
-  "Orthopedics",
-  "ENT"
-];
+export const DOCTOR_CATEGORIES = ['All', 'Cardiology', 'Dermatology', 'Pediatrics', 'Neurology', 'Gynecology', 'Orthopedics', 'Medicine', 'ENT', 'Psychiatry'];

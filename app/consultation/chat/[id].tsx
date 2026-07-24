@@ -1,148 +1,147 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
+  View,
   Text,
   TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import MessageBubble from "../../../components/message-bubble";
-import { COLORS } from "../../../constants/theme";
-import { INITIAL_MESSAGES, Message } from "../../../data/messages";
+interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  time: string;
+}
 
-export default function ConsultationChatScreen() {
-  const params = useLocalSearchParams();
+export default function ChatScreen() {
+  const { id, currentUserId, targetName } = useLocalSearchParams<{
+    id: string;
+    currentUserId?: string;
+    targetName?: string;
+  }>();
+  const router = useRouter();
 
-  const isDoctorView = params.role === "doctor";
-  const patientName = (Array.isArray(params.name) ? params.name[0] : params.name) || "Rahim Ahmed";
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
 
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [messageText, setMessageText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const chatStorageKey = `@chat_room_${id}`;
 
-  const listReference = useRef<FlatList<Message>>(null);
+  const loadChatHistory = useCallback(async () => {
+    if (!id) return;
+    try {
+      const savedMessages = await AsyncStorage.getItem(chatStorageKey);
+      if (savedMessages !== null) {
+        const parsed = JSON.parse(savedMessages);
+        setMessages((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
+            return parsed;
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load chat:', error);
+    }
+  }, [id, chatStorageKey]);
 
-  const getCurrentTime = () => {
-    return new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  useEffect(() => {
+    loadChatHistory();
 
-  const handleSendMessage = () => {
-    const cleanedMessage = messageText.trim();
-    if (cleanedMessage.length === 0) return;
+    const interval = setInterval(() => {
+      loadChatHistory();
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [loadChatHistory]);
+
+  const handleSend = async () => {
+    if (!inputText.trim()) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
-      sender: isDoctorView ? "doctor" : "patient",
-      text: cleanedMessage,
-      time: getCurrentTime(),
+      senderId: currentUserId || 'unknown',
+      text: inputText.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((previousMessages) => [...previousMessages, newMessage]);
-    setMessageText("");
-    setIsTyping(true);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    setInputText('');
+
+    try {
+      await AsyncStorage.setItem(chatStorageKey, JSON.stringify(updatedMessages));
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
   };
 
-  useEffect(() => {
-    if (!isTyping) return;
-
-    const timeout = setTimeout(() => {
-      const autoReplyMessage: Message = {
-        id: Date.now().toString(),
-        sender: isDoctorView ? "patient" : "doctor",
-        text: isDoctorView
-          ? "Thank you Doctor. I am taking the prescribed medicine regularly."
-          : "Thank you for sharing that. How long have you been experiencing this problem?",
-        time: getCurrentTime(),
-      };
-
-      setMessages((previousMessages) => [...previousMessages, autoReplyMessage]);
-      setIsTyping(false);
-    }, 1500);
-
-    return () => clearTimeout(timeout);
-  }, [isTyping, isDoctorView]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      listReference.current?.scrollToEnd({ animated: true });
-    }, 100);
-
-    return () => clearTimeout(timeout);
-  }, [messages]);
-
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>‹ Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{targetName || 'Chat'}</Text>
+      </View>
+
       <KeyboardAvoidingView
-        style={styles.keyboardContainer}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={10}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.chatArea}
       >
-        <View style={styles.header}>
-          <Text style={styles.headerBackText} onPress={() => router.back()}>
-            ‹ Back
-          </Text>
-
-          <View style={styles.headerInformation}>
-            <Text style={styles.doctorName}>
-              {isDoctorView ? patientName : "Dr. Farhana Rahman"}
-            </Text>
-
-            <Text style={styles.onlineText}>● Online</Text>
-          </View>
-        </View>
-
         <FlatList
-          ref={listReference}
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
-          contentContainerStyle={styles.messageList}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={
-            isTyping ? (
-              <View style={styles.typingBubble}>
-                <Text style={styles.typingText}>
-                  {isDoctorView ? patientName : "Doctor"} is typing...
+          renderItem={({ item }) => {
+            const isMe = item.senderId === currentUserId;
+            return (
+              <View
+                style={[
+                  styles.messageBubble,
+                  isMe ? styles.myMessage : styles.theirMessage,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.messageText,
+                    isMe ? styles.myMessageText : styles.theirMessageText,
+                  ]}
+                >
+                  {item.text}
+                </Text>
+                <Text
+                  style={[
+                    styles.timeText,
+                    isMe ? styles.myTimeText : styles.theirTimeText,
+                  ]}
+                >
+                  {item.time}
                 </Text>
               </View>
-            ) : null
+            );
+          }}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No previous messages. Say hello!</Text>
           }
         />
 
-        <View style={styles.inputSection}>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={messageText}
-              onChangeText={setMessageText}
-              placeholder="Write your message..."
-              placeholderTextColor={COLORS.textMuted}
-              multiline
-              maxLength={500}
-            />
-
-            <Pressable
-              style={[
-                styles.sendButton,
-                messageText.trim().length === 0 && styles.disabledButton,
-              ]}
-              onPress={handleSendMessage}
-              disabled={messageText.trim().length === 0}
-            >
-              <Text style={styles.sendText}>Send</Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.characterCount}>{messageText.length}/500</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor="#94a3b8"
+            value={inputText}
+            onChangeText={setInputText}
+          />
+          <TouchableOpacity style={styles.sendBtn} onPress={handleSend}>
+            <Text style={styles.sendBtnText}>Send</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -150,77 +149,98 @@ export default function ConsultationChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
-  keyboardContainer: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.secondary,
+    height: 60,
+    backgroundColor: '#0D1F4E',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
   },
-  headerBackText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#CCFBF1",
-    marginRight: 16,
+  backBtn: {
+    paddingRight: 16,
   },
-  headerInformation: { flex: 1 },
-  doctorName: { fontSize: 17, fontWeight: "700", color: "#FFFFFF" },
-  onlineText: { fontSize: 11, fontWeight: "600", color: "#86EFAC", marginTop: 3 },
-  messageList: {
-    flexGrow: 1,
-    paddingHorizontal: 14,
-    paddingTop: 18,
-    paddingBottom: 12,
+  backBtnText: {
+    color: '#38BDF8',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  typingBubble: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  chatArea: {
+    flex: 1,
+    padding: 16,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 10,
   },
-  typingText: { fontSize: 12, fontStyle: "italic", color: COLORS.textSecondary },
-  inputSection: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
+  myMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#0D9488',
   },
-  inputRow: { flexDirection: "row", alignItems: "flex-end" },
+  theirMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E2E8F0',
+  },
+  messageText: {
+    fontSize: 15,
+  },
+  myMessageText: {
+    color: '#FFFFFF',
+  },
+  theirMessageText: {
+    color: '#1E293B',
+  },
+  timeText: {
+    fontSize: 10,
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+  myTimeText: {
+    color: '#CCFBF1',
+  },
+  theirTimeText: {
+    color: '#64748B',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#94A3B8',
+    marginTop: 40,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
   input: {
     flex: 1,
-    minHeight: 46,
-    maxHeight: 100,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 13,
+    borderColor: '#CBD5E1',
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    textAlignVertical: "top",
+    fontSize: 15,
+    color: '#0F172A',
   },
-  sendButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingHorizontal: 17,
-    paddingVertical: 14,
+  sendBtn: {
+    backgroundColor: '#0D9488',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 20,
     marginLeft: 8,
   },
-  disabledButton: { backgroundColor: COLORS.disabled },
-  sendText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
-  characterCount: {
-    fontSize: 10,
-    color: COLORS.textMuted,
-    marginTop: 5,
-    marginLeft: 4,
+  sendBtnText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
