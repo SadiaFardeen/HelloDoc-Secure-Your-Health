@@ -1,148 +1,140 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { DOCTORS } from '../data/doctors';
-import { PATIENTS } from '../data/patient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function PatientDashboard() {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
-  const handleLogin = () => {
-    const cleanEmail = email.trim().toLowerCase();
+  const patientEmail = (params.patientEmail as string) || 'pat1@hello.com';
+  const patNum = patientEmail.replace('pat', '').replace('@hello.com', '');
+  const patientName = params.patientName || `Patient ${patNum || '1'}`;
 
-    if (!cleanEmail) {
-      alert('Please enter your email');
-      return;
+  const handleLogout = () => {
+    if (router.canDismiss()) {
+      router.dismissTo('/');
+    } else {
+      router.replace('/');
     }
-
-    const matchedDoctor = DOCTORS.find((d) => d.email.toLowerCase() === cleanEmail);
-
-    if (matchedDoctor) {
-      router.replace({
-        pathname: '/doctorDashboard/dashboard',
-        params: { doctorId: matchedDoctor.id, doctorName: matchedDoctor.name, doctorEmail: matchedDoctor.email }
-      });
-      return;
-    }
-
-    const matchedPatient = PATIENTS.find((p) => p.email.toLowerCase() === cleanEmail);
-
-    if (matchedPatient) {
-      router.replace({
-        pathname: '/patient/dashboard',
-        params: { patientId: matchedPatient.id, patientName: matchedPatient.name, patientEmail: matchedPatient.email }
-      });
-      return;
-    }
-
-    alert('Account not found! Use a valid Doctor or Patient email.');
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-      style={styles.container}
-    >
-      <View style={styles.card}>
-        <Text style={styles.title}>HelloDoc 🩺</Text>
-        <Text style={styles.subtitle}>Welcome back! Please login to your account.</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="enter your email..."
-            placeholderTextColor="#94a3b8"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Hello, 🩺</Text>
+          <Text style={styles.patientName}>{patientName}</Text>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor="#94a3b8"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Your Appointments 📅</Text>
+          <Text style={styles.cardSub}>No upcoming appointments today.</Text>
         </View>
 
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-          <Text style={styles.loginBtnText}>Login</Text>
+        <View style={styles.actionContainer}>
+          <TouchableOpacity 
+            style={styles.primaryBtn}
+            onPress={() => router.push('/patient/doctors' as any)}
+          >
+            <Text style={styles.btnText}>🔍 Find & Book a Doctor</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.secondaryBtn}
+            onPress={() => router.push('/patient/prescriptions' as any)}
+          >
+            <Text style={styles.btnText}>📄 View My Prescriptions</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutBtnText}>Logout</Text>
         </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f8fafc' 
   },
-  card: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
+  content: { 
+    padding: 20 
+  },
+  header: { 
+    backgroundColor: '#0284c7', 
+    padding: 24, 
+    borderRadius: 16, 
+    marginBottom: 20 
+  },
+  greeting: { 
+    color: '#bae6fd', 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
+  patientName: { 
+    color: '#ffffff', 
+    fontSize: 26, 
+    fontWeight: 'bold', 
+    marginTop: 4 
+  },
+  card: { 
+    backgroundColor: '#ffffff', 
+    padding: 18, 
+    borderRadius: 12, 
+    borderWidth: 1, 
+    borderColor: '#e2e8f0', 
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0f766e',
-    textAlign: 'center',
-    marginBottom: 6,
+  cardTitle: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#0f172a' 
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 24,
+  cardSub: { 
+    fontSize: 13, 
+    color: '#64748b', 
+    marginTop: 6 
   },
-  inputGroup: {
-    marginBottom: 16,
+  actionContainer: {
+    gap: 12,
+    marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 6,
+  primaryBtn: { 
+    backgroundColor: '#0f766e', 
+    padding: 16, 
+    borderRadius: 12, 
+    alignItems: 'center' 
   },
-  input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: '#0f172a',
+  secondaryBtn: { 
+    backgroundColor: '#0284c7', 
+    padding: 16, 
+    borderRadius: 12, 
+    alignItems: 'center' 
   },
-  loginBtn: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
+  btnText: { 
+    color: '#ffffff', 
+    fontWeight: 'bold', 
+    fontSize: 15 
   },
-  loginBtnText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  logoutBtn: { 
+    backgroundColor: '#ef4444', 
+    padding: 14, 
+    borderRadius: 10, 
+    alignItems: 'center', 
+    marginTop: 10 
   },
+  logoutBtnText: { 
+    color: '#ffffff', 
+    fontWeight: 'bold' 
+  }
 });
