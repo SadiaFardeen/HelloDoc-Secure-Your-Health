@@ -1,3 +1,4 @@
+
 import {
   router,
   useLocalSearchParams,
@@ -10,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomButton from "../../components/custom-button";
@@ -30,15 +32,9 @@ export default function DoctorDetailsScreen() {
   if (!doctor) {
     return (
       <SafeAreaView style={styles.screen}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            Doctor Details
-          </Text>
-        </View>
-
         <View style={styles.notFoundContainer}>
           <Text style={styles.notFoundTitle}>
-            Doctor not found
+            Doctor Details
           </Text>
 
           <Text style={styles.notFoundText}>
@@ -63,18 +59,18 @@ export default function DoctorDetailsScreen() {
       },
     });
   };
-  
+
   const handleBookAppointment = () => {
     router.push({
       pathname: "/(tabs)/booking",
       params: {
-      doctorId: doctor.id,
-      doctorName: doctor.name,
-      specialty: doctor.specialization,
-      fee: doctor.fee.toString(),
-    },
-  });
-};
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        specialty: doctor.specialization,
+        fee: doctor.fee.toString(),
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -193,6 +189,7 @@ export default function DoctorDetailsScreen() {
           onPress={handleStartConsultation}
           style={styles.startButton}
         />
+
         <CustomButton
           title="Book Appointment"
           variant="outline"
