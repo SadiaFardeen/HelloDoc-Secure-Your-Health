@@ -1,284 +1,305 @@
-<<<<<<< HEAD
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import { useApp } from "@/Context/AppContext";
+import { router, useLocalSearchParams } from "expo-router";
+import React from "react";
 import {
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  View
-} from 'react-native';
-=======
-import { useRouter } from "expo-router";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from "react-native";
->>>>>>> ea3217190956a2c8a2c2db896ea1e4edf8245c20
+
+import { PATIENT_ACCOUNTS } from "../../data/accounts";
+import { Appointment } from "../../data/mockData";
 
 export default function PatientDashboard() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
+  const {
+    patientId: patientIdParam,
+    bookingStatus,
+  } = useLocalSearchParams<{
+    patientId?: string;
+    bookingStatus?: string;
+  }>();
+  const {
+    appointments,
+    currentPatientId,
+    prescriptions,
+    setCurrentPatientId,
+    signOut,
+  } = useApp();
 
-  const patientEmail = (params.patientEmail as string) || 'pat1@hello.com';
-  const patNum = patientEmail.replace('pat', '').replace('@hello.com', '');
-  const patientName = params.patientName || `Patient ${patNum || '1'}`;
+  const patientId = patientIdParam ?? currentPatientId ?? undefined;
+  const patient = PATIENT_ACCOUNTS.find((account) => account.id === patientId);
+  const patientEmail = patient?.email.toLowerCase();
 
-  const handleLogout = () => {
-    try {
-      if (router.canDismiss()) {
-        router.dismissAll();
-      }
-    } catch (e) {
-   
+  const patientAppointments = appointments
+    .filter(
+      (appointment) =>
+        appointment.patientId === patientId &&
+        appointment.status !== "Cancelled"
+    )
+    .sort((a, b) =>
+      `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)
+    );
+
+  const patientPrescriptionCount = prescriptions.filter((prescription) => {
+    const samePatientId = prescription.patientId === patientId;
+    const samePatientEmail =
+      Boolean(patientEmail) &&
+      prescription.patientEmail?.toLowerCase() === patientEmail;
+
+    return samePatientId || samePatientEmail;
+  }).length;
+
+  React.useEffect(() => {
+    if (patientId) {
+      setCurrentPatientId(patientId);
     }
-    router.replace('/');
+  }, [patientId, setCurrentPatientId]);
+
+  const openChat = (appointment: Appointment) => {
+    router.push({
+      pathname: "/consultation/chat/[id]",
+      params: {
+        id: `${appointment.doctorId}_${appointment.patientId}`,
+        doctorId: appointment.doctorId,
+        patientId: appointment.patientId,
+        currentUserId: `patient:${appointment.patientId}`,
+        targetName: appointment.doctorName,
+      },
+    });
   };
 
+  const handleLogout = () => {
+    signOut();
+    router.replace("/");
+  };
+
+  if (!patient) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Patient account not found</Text>
+          <Text style={styles.errorText}>Please sign in again.</Text>
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Back to Login</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-<<<<<<< HEAD
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hello, 🩺</Text>
-          <Text style={styles.patientName}>{patientName}</Text>
+          <Text style={styles.greeting}>Hello, Patient 👋</Text>
+          <Text style={styles.patientName}>{patient.name}</Text>
+          <Text style={styles.email}>{patient.email}</Text>
         </View>
 
-        {/* Info Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Appointments 📅</Text>
-          <Text style={styles.cardSub}>No upcoming appointments today.</Text>
-        </View>
+        {bookingStatus === "success" ? (
+          <View style={styles.successCard}>
+            <Text style={styles.successTitle}>Appointment confirmed</Text>
+            
+          </View>
+        ) : null}
 
-        {/* Action Buttons */}
         <View style={styles.actionContainer}>
-          <Pressable 
-            style={({ pressed }) => [
-              styles.primaryBtn,
-              pressed && styles.btnPressed
-            ]}
-            onPress={() => router.push('/patient/doctors' as any)}
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() =>
+              router.push({
+                pathname: "/patient/doctor",
+                params: { patientId: patient.id },
+              })
+            }
           >
-            <Text style={styles.btnText}>🔍 Find & Book a Doctor</Text>
+            <Text style={styles.buttonText}>🔍 Find & Book a Doctor</Text>
           </Pressable>
 
-          <Pressable 
-            style={({ pressed }) => [
-              styles.secondaryBtn,
-              pressed && styles.btnPressed
-            ]}
-            onPress={() => router.push('/patient/prescriptions' as any)}
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push({
+                pathname: "/patient/prescriptions",
+                params: { patientId: patient.id },
+              })
+            }
           >
-            <Text style={styles.btnText}>📄 View My Prescriptions</Text>
+            <Text style={styles.buttonText}>
+              📄 View My Prescriptions ({patientPrescriptionCount})
+            </Text>
           </Pressable>
         </View>
 
-        {/* Fixed Logout Button with Pressable */}
-        <Pressable 
-          style={({ pressed }) => [
-            styles.logoutBtn,
-            pressed && styles.logoutPressed
-          ]} 
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutBtnText}>Logout</Text>
-        </Pressable>
+        <Text style={styles.sectionTitle}>Your Appointments</Text>
 
+        {patientAppointments.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No appointments yet</Text>
+            <Text style={styles.emptyText}>
+              Book a doctor first. Chat becomes available after booking.
+            </Text>
+          </View>
+        ) : (
+          patientAppointments.map((appointment) => (
+            <View key={appointment.id} style={styles.appointmentCard}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.doctorName}>{appointment.doctorName}</Text>
+                  <Text style={styles.specialty}>{appointment.specialty}</Text>
+                </View>
+                <Text style={styles.statusBadge}>{appointment.status}</Text>
+              </View>
+
+              <Text style={styles.dateTime}>
+                📅 {appointment.date} · 🕒 {appointment.time}
+              </Text>
+              <Text style={styles.accountText}>
+                Patient account: {appointment.patientEmail || patient.email}
+              </Text>
+
+              <Pressable
+                style={styles.chatButton}
+                onPress={() => openChat(appointment)}
+              >
+                <Text style={styles.chatButtonText}>💬 Chat with Doctor</Text>
+              </Pressable>
+            </View>
+          ))
+        )}
+
+        <Pressable style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
-=======
-    <ScrollView style={styles.container}>
-      <Text style={styles.welcomeText}>Hello, Patient 👋</Text>
-
-      <Text style={styles.subText}>
-        How can we help you today?
-      </Text>
-
-      <View style={styles.grid}>
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => router.push("/patient/doctors")}
-        >
-          <Text style={styles.cardTitle}>🔍 Find Doctor</Text>
-          <Text style={styles.cardDesc}>
-            Search specialists near you
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>📅 Appointments</Text>
-          <Text style={styles.cardDesc}>
-            Check scheduled visits
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => router.push("/patient/prescriptions")}
-        >
-          <Text style={styles.cardTitle}>📄 Prescriptions</Text>
-          <Text style={styles.cardDesc}>
-            View medical records
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={styles.logoutBtn}
-        onPress={() => router.replace("/")}
-      >
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
-    </ScrollView>
->>>>>>> ea3217190956a2c8a2c2db896ea1e4edf8245c20
   );
 }
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f8fafc' 
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  content: { padding: 20, paddingBottom: 40 },
+  header: {
+    backgroundColor: "#0284C7",
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 16,
   },
-  content: { 
-    padding: 20 
-  },
-  header: { 
-    backgroundColor: '#0284c7', 
-    padding: 24, 
-    borderRadius: 16, 
-    marginBottom: 20 
-  },
-  greeting: { 
-    color: '#bae6fd', 
-    fontSize: 14, 
-    fontWeight: '500' 
-  },
-  patientName: { 
-    color: '#ffffff', 
-    fontSize: 26, 
-    fontWeight: 'bold', 
-    marginTop: 4 
-  },
-  card: { 
-    backgroundColor: '#ffffff', 
-    padding: 18, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: '#e2e8f0', 
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  cardTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#0f172a' 
-  },
-  cardSub: { 
-    fontSize: 13, 
-    color: '#64748b', 
-    marginTop: 6 
-  },
-  actionContainer: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  primaryBtn: { 
-    backgroundColor: '#0f766e', 
-    padding: 16, 
-    borderRadius: 12, 
-    alignItems: 'center' 
-  },
-  secondaryBtn: { 
-    backgroundColor: '#0284c7', 
-    padding: 16, 
-    borderRadius: 12, 
-    alignItems: 'center' 
-  },
-  btnText: { 
-    color: '#ffffff', 
-    fontWeight: 'bold', 
-    fontSize: 15 
-  },
-  btnPressed: {
-    opacity: 0.8
-  },
-  logoutBtn: { 
-    backgroundColor: '#ef4444', 
-    padding: 16, 
-    borderRadius: 12, 
-    alignItems: 'center', 
-    marginTop: 10 
-  },
-  logoutPressed: {
-    backgroundColor: '#dc2626',
-    opacity: 0.9
-  },
-  logoutBtnText: { 
-    color: '#ffffff', 
-    fontWeight: 'bold',
-    fontSize: 16
-  }
-=======
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#f8f9fa",
-  },
-
-  welcomeText: {
-    fontSize: 24,
+  greeting: { color: "#BAE6FD", fontSize: 14, fontWeight: "500" },
+  patientName: {
+    color: "#FFFFFF",
+    fontSize: 26,
     fontWeight: "bold",
-    marginTop: 20,
+    marginTop: 4,
   },
-
-  subText: {
-    color: "#666",
-    marginBottom: 20,
-  },
-
-  grid: {
-    gap: 15,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    padding: 20,
+  email: { color: "#E0F2FE", fontSize: 13, marginTop: 6 },
+  successCard: {
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
     borderRadius: 12,
-    elevation: 2,
+    padding: 14,
+    marginBottom: 16,
   },
-
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-
-  cardDesc: {
-    color: "#777",
-  },
-
-  logoutBtn: {
-    marginTop: 30,
-    padding: 15,
-    backgroundColor: "#dc3545",
-    borderRadius: 8,
+  successTitle: { color: "#065F46", fontWeight: "800", fontSize: 15 },
+  successText: { color: "#047857", fontSize: 13, lineHeight: 19, marginTop: 4 },
+  actionContainer: { gap: 12, marginBottom: 24 },
+  primaryButton: {
+    backgroundColor: "#0F766E",
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
   },
-
-  logoutText: {
-    color: "#fff",
-    fontWeight: "bold",
+  secondaryButton: {
+    backgroundColor: "#0284C7",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
   },
->>>>>>> ea3217190956a2c8a2c2db896ea1e4edf8245c20
+  buttonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 15 },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginBottom: 14,
+  },
+  appointmentCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 12,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  cardHeaderText: { flex: 1 },
+  doctorName: { fontSize: 17, fontWeight: "700", color: "#0F172A" },
+  specialty: { fontSize: 13, color: "#0F766E", marginTop: 3 },
+  statusBadge: {
+    color: "#0F766E",
+    backgroundColor: "#CCFBF1",
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    overflow: "hidden",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  dateTime: { fontSize: 13, color: "#475569", marginTop: 14 },
+  accountText: { fontSize: 12, color: "#0284C7", marginTop: 5 },
+  chatButton: {
+    backgroundColor: "#0F766E",
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 9,
+    alignItems: "center",
+    marginTop: 14,
+  },
+  chatButtonText: { color: "#FFFFFF", fontWeight: "700" },
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    padding: 24,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#0F172A" },
+  emptyText: {
+    color: "#64748B",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 7,
+    lineHeight: 20,
+  },
+  logoutButton: {
+    backgroundColor: "#EF4444",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 18,
+  },
+  logoutButtonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
+  errorContainer: { flex: 1, justifyContent: "center", padding: 24 },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#0F172A",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 8,
+  },
 });

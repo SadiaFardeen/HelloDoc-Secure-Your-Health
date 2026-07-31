@@ -1,152 +1,114 @@
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useApp } from "@/Context/AppContext";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useState } from "react";
 import {
   FlatList,
   Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-import {
-  DOCTORS,
-  DOCTOR_CATEGORIES,
-  Doctor,
-} from "../../data/doctor";
+
+import { Doctor, DOCTOR_CATEGORIES, DOCTORS } from "../../data/doctor";
 
 export default function DoctorListScreen() {
-  const router = useRouter();
+  const { patientId: patientIdParam } = useLocalSearchParams<{
+    patientId?: string;
+  }>();
+  const { currentPatientId } = useApp();
+  const patientId = patientIdParam ?? currentPatientId ?? undefined;
 
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredDoctors = DOCTORS.filter((doc) => {
+  const filteredDoctors = DOCTORS.filter((doctor) => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
     const matchesCategory =
-      selectedCategory === "All" ||
-      doc.specialization === selectedCategory;
-
+      selectedCategory === "All" || doctor.specialization === selectedCategory;
     const matchesSearch =
-      doc.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      doc.specialization
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      doc.hospital
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      doctor.name.toLowerCase().includes(normalizedQuery) ||
+      doctor.specialization.toLowerCase().includes(normalizedQuery) ||
+      doctor.hospital.toLowerCase().includes(normalizedQuery);
 
     return matchesCategory && matchesSearch;
   });
 
-  const handleDoctorPress = (doctor: Doctor) => {
+  const openDoctor = (doctor: Doctor) => {
+    if (!patientId) {
+      router.replace("/");
+      return;
+    }
+
     router.push({
       pathname: "/doctor/[id]",
-      params: {
-        id: doctor.id,
-      },
-    });
-  };
-
-  const handleStartChat = (id: string, name: string) => {
-    router.push({
-      pathname: "/consultation/chat/[id]",
-      params: { id, name },
+      params: { id: doctor.id, patientId },
     });
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={() => router.back()}
-      >
-        <Text style={styles.backBtnText}>
-          ← Back to Dashboard
-        </Text>
-      </TouchableOpacity>
+      <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>← Back to Dashboard</Text>
+      </Pressable>
 
       <Text style={styles.header}>Find Your Doctor</Text>
 
       <TextInput
         style={styles.searchBar}
         placeholder="Search doctor, specialty, hospital..."
+        placeholderTextColor="#94A3B8"
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
 
       <View style={styles.categoryContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-        >
-          {DOCTOR_CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {DOCTOR_CATEGORIES.map((category) => (
+            <Pressable
+              key={category}
               style={[
-                styles.categoryBtn,
-                selectedCategory === cat && styles.activeCategoryBtn,
+                styles.categoryButton,
+                selectedCategory === category && styles.activeCategoryButton,
               ]}
-              onPress={() => setSelectedCategory(cat)}
+              onPress={() => setSelectedCategory(category)}
             >
               <Text
                 style={[
                   styles.categoryText,
-                  selectedCategory === cat && styles.activeCategoryText,
+                  selectedCategory === category && styles.activeCategoryText,
                 ]}
               >
-                {cat}
+                {category}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
       </View>
 
       <FlatList
         data={filteredDoctors}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Doctor) => item.id}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }: { item: Doctor }) => (
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => handleDoctorPress(item)}
-          >
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={styles.image}
-            />
-
+          <Pressable style={styles.card} onPress={() => openDoctor(item)}>
+            <Image source={{ uri: item.imageUrl }} style={styles.image} />
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
-
               <Text style={styles.specialty}>
-                {item.specialization} • {item.qualification}
+                {item.specialization} · {item.qualification}
               </Text>
-
-              <Text style={styles.subInfo}>
-                {item.hospital}, {item.location}
-              </Text>
-
-              <Text style={styles.subInfo}>
-                Experience: {item.experience} Years
-              </Text>
-
+              <Text style={styles.subInfo}>{item.hospital}</Text>
               <View style={styles.row}>
                 <Text style={styles.rating}>⭐ {item.rating}</Text>
                 <Text style={styles.fee}>৳{item.fee}</Text>
               </View>
-
-              <TouchableOpacity
-                style={styles.chatBtn}
-                onPress={() => handleStartChat(item.id, item.name)}
-              >
-                <Text style={styles.chatBtnText}>💬 Consult Now</Text>
-              </TouchableOpacity>
+              <Text style={styles.profileLink}>View profile & book →</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         )}
       />
     </View>
@@ -154,116 +116,25 @@ export default function DoctorListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 15,
-    backgroundColor: "#f8f9fa",
-  },
-  backBtn: {
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  backBtnText: {
-    color: "#0284c7",
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#1e293b",
-  },
-  searchBar: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
-  },
-  categoryContainer: {
-    height: 40,
-    marginBottom: 15,
-  },
-  categoryBtn: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#e2e8f0",
-    marginRight: 8,
-    justifyContent: "center",
-  },
-  activeCategoryBtn: {
-    backgroundColor: "#0284c7",
-  },
-  categoryText: {
-    color: "#475569",
-    fontWeight: "600",
-  },
-  activeCategoryText: {
-    color: "#fff",
-  },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 1,
-  },
-  image: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    marginRight: 12,
-  },
-  info: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#0f172a",
-  },
-  specialty: {
-    fontSize: 13,
-    color: "#0284c7",
-    fontWeight: "600",
-    marginVertical: 2,
-  },
-  subInfo: {
-    fontSize: 12,
-    color: "#64748b",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  rating: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#f59e0b",
-  },
-  fee: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#16a34a",
-  },
-  chatBtn: {
-    marginTop: 8,
-    backgroundColor: "#0f766e",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  chatBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 12,
-  },
+  container: { flex: 1, paddingHorizontal: 15, paddingTop: 15, backgroundColor: "#F8FAFC" },
+  backButton: { marginTop: 8, marginBottom: 12 },
+  backButtonText: { color: "#0284C7", fontWeight: "bold", fontSize: 15 },
+  header: { fontSize: 24, fontWeight: "bold", marginBottom: 15, color: "#0F172A" },
+  searchBar: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 10, padding: 12, marginBottom: 15, color: "#0F172A" },
+  categoryContainer: { height: 42, marginBottom: 15 },
+  categoryButton: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: "#E2E8F0", marginRight: 8, justifyContent: "center" },
+  activeCategoryButton: { backgroundColor: "#0284C7" },
+  categoryText: { color: "#475569", fontWeight: "600" },
+  activeCategoryText: { color: "#FFFFFF" },
+  listContent: { paddingBottom: 30 },
+  card: { flexDirection: "row", backgroundColor: "#FFFFFF", padding: 12, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: "#E2E8F0" },
+  image: { width: 82, height: 82, borderRadius: 12, marginRight: 12 },
+  info: { flex: 1 },
+  name: { fontSize: 16, fontWeight: "bold", color: "#0F172A" },
+  specialty: { fontSize: 12, color: "#0284C7", fontWeight: "600", marginVertical: 3 },
+  subInfo: { fontSize: 12, color: "#64748B" },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 7 },
+  rating: { fontSize: 13, fontWeight: "bold", color: "#D97706" },
+  fee: { fontSize: 14, fontWeight: "bold", color: "#16A34A" },
+  profileLink: { color: "#0F766E", fontSize: 12, fontWeight: "700", marginTop: 8 },
 });
