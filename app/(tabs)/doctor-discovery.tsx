@@ -20,7 +20,7 @@ import {
     Doctor,
     DOCTOR_CATEGORIES,
     DOCTORS,
-} from "../../data/doctors";
+} from "../../data/doctor";
 
 export default function HomeScreen() {
   const [searchText, setSearchText] =

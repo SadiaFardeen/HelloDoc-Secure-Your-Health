@@ -1,5 +1,6 @@
 // components/doctor-card.tsx
 
+
 import {
     Image,
     Pressable,
@@ -9,7 +10,7 @@ import {
 } from "react-native";
 
 import { COLORS, RADIUS } from "../constants/theme";
-import { Doctor } from "../data/doctors";
+import { Doctor } from "../data/doctor";
 
 interface DoctorCardProps {
   doctor: Doctor;

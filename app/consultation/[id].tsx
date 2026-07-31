@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomButton from "../../components/custom-button";
 import { COLORS } from "../../constants/theme";
-import { DOCTORS } from "../../data/doctors";
+import { DOCTORS } from "../../data/doctor";
 
 export default function ConsultationScreen() {
   const params = useLocalSearchParams();
