@@ -12,17 +12,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomButton from "../../components/custom-button";
 import { COLORS } from "../../constants/theme";
-import { DOCTORS } from "../../data/doctor";
 
 export default function DoctorDetailsScreen() {
   const { id, patientId: patientIdParam } = useLocalSearchParams<{
     id?: string;
     patientId?: string;
   }>();
-  const { appointments, currentPatientId } = useApp();
+  const { appointments, currentPatientId, doctors } = useApp();
 
   const patientId = patientIdParam ?? currentPatientId ?? undefined;
-  const doctor = DOCTORS.find((item) => item.id === id);
+  const doctor = doctors.find((item) => item.id === id);
   const existingAppointment = appointments.find(
     (appointment) =>
       appointment.doctorId === id &&

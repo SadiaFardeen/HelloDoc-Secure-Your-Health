@@ -10,8 +10,6 @@ import {
   View,
 } from "react-native";
 
-import { PATIENT_ACCOUNTS } from "../../data/accounts";
-import { DOCTORS } from "../../data/doctor";
 import { Appointment } from "../../data/mockData";
 
 const AVAILABLE_TIMES = ["10:00 AM", "11:30 AM", "3:00 PM", "5:30 PM"];
@@ -36,12 +34,18 @@ export default function BookingScreen() {
     doctorId?: string;
     patientId?: string;
   }>();
-  const { addAppointment, appointments, currentPatientId } = useApp();
+  const {
+    addAppointment,
+    appointments,
+    currentPatientId,
+    patientAccounts,
+    doctors,
+  } = useApp();
 
   // The patient ID was set when this exact patient email logged in.
   const patientId = params.patientId ?? currentPatientId ?? undefined;
-  const patient = PATIENT_ACCOUNTS.find((item) => item.id === patientId);
-  const doctor = DOCTORS.find((item) => item.id === params.doctorId);
+  const patient = patientAccounts.find((item) => item.id === patientId);
+  const doctor = doctors.find((item) => item.id === params.doctorId);
 
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(

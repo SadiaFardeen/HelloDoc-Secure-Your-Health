@@ -11,8 +11,6 @@ import {
   View,
 } from "react-native";
 
-import { PATIENT_ACCOUNTS } from "../../data/accounts";
-import { DOCTORS } from "../../data/doctor";
 import { Prescription } from "../../data/mockData";
 
 interface PrescriptionForm {
@@ -28,7 +26,13 @@ export default function PrescriptionScreen() {
     doctorId?: string;
     patientId?: string;
   }>();
-  const { addPrescription, appointments, currentDoctorId } = useApp();
+  const {
+    addPrescription,
+    appointments,
+    currentDoctorId,
+    patientAccounts,
+    doctors,
+  } = useApp();
 
   const doctorId = params.doctorId ?? currentDoctorId ?? undefined;
   const appointment = appointments.find(
@@ -37,10 +41,10 @@ export default function PrescriptionScreen() {
       item.doctorId === doctorId &&
       item.patientId === params.patientId
   );
-  const patient = PATIENT_ACCOUNTS.find(
+  const patient = patientAccounts.find(
     (account) => account.id === appointment?.patientId
   );
-  const doctor = DOCTORS.find((item) => item.id === doctorId);
+  const doctor = doctors.find((item) => item.id === doctorId);
 
   const [form, setForm] = useState<PrescriptionForm>({
     medicineName: "",
