@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -13,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { DOCTOR_ACCOUNTS, PATIENT_ACCOUNTS } from "../data/accounts";
+import { verifyPassword } from "../utils/auth";
 
 type LoginRole = "patient" | "doctor";
 
@@ -21,6 +20,8 @@ export default function LoginScreen() {
   const router = useRouter();
   const {
     isHydrated,
+    patientAccounts,
+    doctorAccounts,
     setCurrentDoctorId,
     setCurrentPatientId,
     setUserRole,
@@ -29,35 +30,36 @@ export default function LoginScreen() {
   const [role, setRole] = useState<LoginRole>("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectRole = (nextRole: LoginRole) => {
     setRole(nextRole);
     setEmail("");
     setPassword("");
+    setFeedback("");
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
+    const cleanPassword = password;
 
     if (!cleanEmail || !cleanPassword) {
-      Alert.alert("Missing information", "Please enter your email and password.");
+      setFeedback("Please enter your email and password.");
       return;
     }
 
+    setFeedback("");
     setIsSubmitting(true);
 
     try {
       if (role === "doctor") {
-        const doctor = DOCTOR_ACCOUNTS.find(
-          (account) =>
-            account.email.toLowerCase() === cleanEmail &&
-            account.password === cleanPassword
+        const doctor = doctorAccounts.find(
+          (account) => account.email.toLowerCase() === cleanEmail
         );
 
-        if (!doctor) {
-          Alert.alert("Login failed", "Invalid doctor email or password.");
+        if (!doctor || !(await verifyPassword(doctor, cleanPassword))) {
+          setFeedback("Invalid doctor email or password.");
           return;
         }
 
@@ -71,14 +73,12 @@ export default function LoginScreen() {
         return;
       }
 
-      const patient = PATIENT_ACCOUNTS.find(
-        (account) =>
-          account.email.toLowerCase() === cleanEmail &&
-          account.password === cleanPassword
+      const patient = patientAccounts.find(
+        (account) => account.email.toLowerCase() === cleanEmail
       );
 
-      if (!patient) {
-        Alert.alert("Login failed", "Invalid patient email or password.");
+      if (!patient || !(await verifyPassword(patient, cleanPassword))) {
+        setFeedback("Invalid patient email or password.");
         return;
       }
 
@@ -89,6 +89,9 @@ export default function LoginScreen() {
         pathname: "/patient/dashboard",
         params: { patientId: patient.id },
       });
+    } catch (error) {
+      console.error("Login failed:", error);
+      setFeedback("Could not sign in. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -168,9 +171,15 @@ export default function LoginScreen() {
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
-              onSubmitEditing={handleLogin}
+              onSubmitEditing={() => void handleLogin()}
             />
           </View>
+
+          {feedback ? (
+            <View style={styles.feedbackBox}>
+              <Text style={styles.feedbackText}>{feedback}</Text>
+            </View>
+          ) : null}
 
           <Pressable
             style={[
@@ -180,7 +189,7 @@ export default function LoginScreen() {
                 : styles.patientLoginButton,
               isSubmitting && styles.disabledButton,
             ]}
-            onPress={handleLogin}
+            onPress={() => void handleLogin()}
             disabled={isSubmitting}
           >
             <Text style={styles.loginButtonText}>
@@ -189,6 +198,13 @@ export default function LoginScreen() {
                 : `Login as ${role === "doctor" ? "Doctor" : "Patient"}`}
             </Text>
           </Pressable>
+
+          <View style={styles.signupRow}>
+            <Text style={styles.signupText}>No account yet?</Text>
+            <Pressable onPress={() => router.push("/signup")}>
+              <Text style={styles.signupLink}> Create a new account</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -219,9 +235,14 @@ const styles = StyleSheet.create({
   inputGroup: { gap: 6 },
   label: { fontSize: 14, fontWeight: "600", color: "#334155" },
   input: { backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 14, fontSize: 15, color: "#0F172A" },
-  loginButton: { padding: 16, borderRadius: 12, alignItems: "center", marginTop: 10 },
+  feedbackBox: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA", borderRadius: 10, padding: 12 },
+  feedbackText: { color: "#B91C1C", fontSize: 13 },
+  loginButton: { padding: 16, borderRadius: 12, alignItems: "center", marginTop: 2 },
   doctorLoginButton: { backgroundColor: "#0F766E" },
   patientLoginButton: { backgroundColor: "#0284C7" },
   disabledButton: { opacity: 0.65 },
   loginButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  signupRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap" },
+  signupText: { color: "#64748B", fontSize: 14 },
+  signupLink: { color: "#0284C7", fontWeight: "800", fontSize: 14 },
 });

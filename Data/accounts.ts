@@ -1,17 +1,27 @@
-export interface DoctorAccount {
+export interface PasswordFields {
+  
+  password?: string;
+  
+  passwordHash?: string;
+  passwordSalt?: string;
+}
+
+export interface DoctorAccount extends PasswordFields {
   id: string;
   doctorId: string;
   name: string;
   specialty: string;
   email: string;
-  password: string;
+  isRegistered?: boolean;
+  createdAt?: string;
 }
 
-export interface PatientAccount {
+export interface PatientAccount extends PasswordFields {
   id: string;
   name: string;
   email: string;
-  password: string;
+  isRegistered?: boolean;
+  createdAt?: string;
 }
 
 export const DOCTOR_ACCOUNTS: DoctorAccount[] = [

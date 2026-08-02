@@ -10,8 +10,6 @@ import {
   View,
 } from "react-native";
 
-import { DOCTOR_ACCOUNTS } from "../../data/accounts";
-import { DOCTORS } from "../../data/doctor";
 import { Appointment } from "../../data/mockData";
 
 export default function DoctorDashboard() {
@@ -28,13 +26,15 @@ export default function DoctorDashboard() {
     appointments,
     currentDoctorId,
     prescriptions,
+    doctorAccounts,
+    doctors,
     setCurrentDoctorId,
     signOut,
   } = useApp();
 
   const doctorId = doctorIdParam ?? currentDoctorId ?? undefined;
-  const doctorProfile = DOCTORS.find((doctor) => doctor.id === doctorId);
-  const doctorAccount = DOCTOR_ACCOUNTS.find(
+  const doctorProfile = doctors.find((doctor) => doctor.id === doctorId);
+  const doctorAccount = doctorAccounts.find(
     (account) => account.doctorId === doctorId
   );
 

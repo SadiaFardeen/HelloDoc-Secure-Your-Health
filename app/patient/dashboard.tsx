@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 
-import { PATIENT_ACCOUNTS } from "../../data/accounts";
 import { Appointment } from "../../data/mockData";
 
 export default function PatientDashboard() {
@@ -25,12 +24,13 @@ export default function PatientDashboard() {
     appointments,
     currentPatientId,
     prescriptions,
+    patientAccounts,
     setCurrentPatientId,
     signOut,
   } = useApp();
 
   const patientId = patientIdParam ?? currentPatientId ?? undefined;
-  const patient = PATIENT_ACCOUNTS.find((account) => account.id === patientId);
+  const patient = patientAccounts.find((account) => account.id === patientId);
   const patientEmail = patient?.email.toLowerCase();
 
   const patientAppointments = appointments
@@ -102,7 +102,6 @@ export default function PatientDashboard() {
         {bookingStatus === "success" ? (
           <View style={styles.successCard}>
             <Text style={styles.successTitle}>Appointment confirmed</Text>
-            
           </View>
         ) : null}
 

@@ -12,19 +12,24 @@ import {
   View,
 } from "react-native";
 
-import { Doctor, DOCTOR_CATEGORIES, DOCTORS } from "../../data/doctor";
+import { Doctor } from "../../data/doctor";
 
 export default function DoctorListScreen() {
   const { patientId: patientIdParam } = useLocalSearchParams<{
     patientId?: string;
   }>();
-  const { currentPatientId } = useApp();
+  const { currentPatientId, doctors } = useApp();
   const patientId = patientIdParam ?? currentPatientId ?? undefined;
 
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredDoctors = DOCTORS.filter((doctor) => {
+  const categories = [
+    "All",
+    ...Array.from(new Set(doctors.map((doctor) => doctor.specialization))),
+  ];
+
+  const filteredDoctors = doctors.filter((doctor) => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const matchesCategory =
       selectedCategory === "All" || doctor.specialization === selectedCategory;
@@ -66,7 +71,7 @@ export default function DoctorListScreen() {
 
       <View style={styles.categoryContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {DOCTOR_CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <Pressable
               key={category}
               style={[

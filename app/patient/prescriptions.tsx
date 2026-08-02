@@ -10,16 +10,15 @@ import {
   View,
 } from "react-native";
 
-import { PATIENT_ACCOUNTS } from "../../data/accounts";
 
 export default function PatientPrescriptionsScreen() {
   const { patientId: patientIdParam } = useLocalSearchParams<{
     patientId?: string;
   }>();
-  const { currentPatientId, prescriptions } = useApp();
+  const { currentPatientId, prescriptions, patientAccounts } = useApp();
 
   const patientId = patientIdParam ?? currentPatientId ?? undefined;
-  const patient = PATIENT_ACCOUNTS.find((account) => account.id === patientId);
+  const patient = patientAccounts.find((account) => account.id === patientId);
   const patientEmail = patient?.email.toLowerCase();
 
   const patientPrescriptions = prescriptions
