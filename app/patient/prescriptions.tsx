@@ -63,26 +63,70 @@ export default function PatientPrescriptionsScreen() {
               )
             )}
 
-            <Text style={styles.sectionTitle}>
-              Doctor's Notes
-            </Text>
+<Text style={styles.sectionTitle}>
+  Doctor's Notes
+</Text>
 
-            <Text style={styles.notes}>
-              {prescription.notes || "No additional notes"}
-            </Text>
-          </View>
-        ))
-      )}
-    </ScrollView>
+<Text style={styles.notes}>
+  {prescription.notes || "No additional notes"}
+</Text>
+
+<TouchableOpacity
+  style={styles.viewButton}
+  onPress={() =>
+    router.push({
+      pathname: "/patient/prescription-details",
+      params: { id: prescription.id },
+    })
+  }
+>
+  <Text style={styles.viewButtonText}>View Details</Text>
+</TouchableOpacity>
+              <Text style={styles.sectionTitle}>Doctor&apos;s Notes</Text>
+<Text style={styles.notes}>{prescription.notes}</Text>
+
+<Pressable
+  style={styles.viewButton}
+  onPress={() =>
+    router.push({
+      pathname: "/patient/prescription-details",
+      params: { id: prescription.id },
+    })
+  }
+>
+  <Text style={styles.viewButtonText}>View Details</Text>
+</Pressable>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </SafeAreaView>
+
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-    padding: 20,
-  },
+container: {
+  flex: 1,
+  backgroundColor: "#F8FAFC",
+  padding: 20,
+},
+viewButton: {
+  backgroundColor: "#2563EB",
+  paddingVertical: 10,
+  borderRadius: 8,
+  marginTop: 15,
+},
+
+viewButtonText: {
+  color: "#FFFFFF",
+  textAlign: "center",
+  fontWeight: "700",
+  fontSize: 14,
+},
+  safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { padding: 20, paddingBottom: 40 },
+
 
   backButton: {
     alignSelf: "flex-start",
@@ -121,12 +165,47 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
 
+
   patientName: {
     fontSize: 17,
     fontWeight: "700",
     color: "#0F172A",
     marginBottom: 15,
   },
+
+
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+
+  cardHeaderText: { flex: 1 },
+
+  doctorName: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+
+  patientName: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 4,
+  },
+
+  patientEmail: {
+    fontSize: 12,
+    color: "#0284C7",
+    marginTop: 3,
+  },
+
+  dateText: {
+    fontSize: 11,
+    color: "#64748B",
+  },
+
 
   sectionTitle: {
     fontSize: 14,
@@ -170,4 +249,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 21,
   },
+
+  viewButton: {
+    backgroundColor: "#2563EB",
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 15,
+  },
+
+  viewButtonText: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
 });
