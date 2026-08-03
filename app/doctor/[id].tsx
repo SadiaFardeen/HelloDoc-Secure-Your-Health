@@ -58,19 +58,16 @@ export default function DoctorDetailsScreen() {
     });
   };
 
-  const handleOpenChat = () => {
+  const handleStartConsultation = () => {
     if (!existingAppointment || !patientId) {
       return;
     }
 
     router.push({
-      pathname: "/consultation/chat/[id]",
-      params: {
-        id: `${doctor.id}_${patientId}`,
-        doctorId: doctor.id,
-        patientId,
-        currentUserId: `patient:${patientId}`,
-        targetName: doctor.name,
+    pathname: "/consultation/[id]",
+    params: {
+    id: doctor.id,
+    patientId,
       },
     });
   };
@@ -125,8 +122,8 @@ export default function DoctorDetailsScreen() {
               </Text>
             </View>
             <CustomButton
-              title="Open Saved Chat"
-              onPress={handleOpenChat}
+              title="Start Consultation"
+              onPress={handleStartConsultation}
               style={styles.startButton}
             />
           </>

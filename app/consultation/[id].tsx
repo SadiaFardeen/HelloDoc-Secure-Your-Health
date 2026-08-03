@@ -5,7 +5,6 @@ import {
 import { useEffect, useState } from "react";
 
 import {
- 
   StyleSheet,
   Text,
   View,
@@ -17,30 +16,31 @@ import { COLORS } from "../../constants/theme";
 import { DOCTORS } from "../../data/doctor";
 
 export default function ConsultationScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{
+    id?: string;
+    patientId?: string;
+  }>();
 
   const id = Array.isArray(params.id)
     ? params.id[0]
     : params.id;
 
+  const patientId = Array.isArray(params.patientId)
+    ? params.patientId[0]
+    : params.patientId;
+
   const doctor = DOCTORS.find(
     (item) => item.id === id
   );
 
-  const [seconds, setSeconds] =
-    useState(0);
+  const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setSeconds(
-        (previousSeconds) =>
-          previousSeconds + 1
-      );
+      setSeconds((previousSeconds) => previousSeconds + 1);
     }, 1000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   const minutes = Math.floor(seconds / 60);
@@ -64,7 +64,11 @@ export default function ConsultationScreen() {
     router.push({
       pathname: "/consultation/chat/[id]",
       params: {
-        id: doctor.id,
+        id: `${doctor.id}_${patientId}`,
+        doctorId: doctor.id,
+        patientId: patientId!,
+        currentUserId: `patient:${patientId}`,
+        targetName: doctor.name,
       },
     });
   };
