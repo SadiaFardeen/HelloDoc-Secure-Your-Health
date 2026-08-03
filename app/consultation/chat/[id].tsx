@@ -1,231 +1,212 @@
-// app/consultation/chat/[id].tsx
-
-import {
-  router,
-  useLocalSearchParams,
-} from "expo-router";
-import { useEffect, useRef, useState } from "react";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import MessageBubble from "../../../components/message-bubble";
-import { COLORS } from "../../../constants/theme";
-import { DOCTORS } from "../../../data/doctors";
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  text: string;
+  sentAt: string;
+}
 
-import {
-  INITIAL_MESSAGES,
-  Message,
-} from "../../../data/messages";
+export default function ChatScreen() {
+  const {
+    doctorId,
+    patientId,
+    currentUserId,
+    targetName,
+  } = useLocalSearchParams<{
+    id?: string;
+    doctorId?: string;
+    patientId?: string;
+    currentUserId?: string;
+    targetName?: string;
+  }>();
+  const router = useRouter();
+  const listRef = useRef<FlatList<ChatMessage> | null>(null);
 
-export default function ConsultationChatScreen() {
-  const params = useLocalSearchParams();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const id = Array.isArray(params.id)
-    ? params.id[0]
-    : params.id;
+  const roomKey =
+    doctorId && patientId
+      ? `@hellodoc/chat-v1/doctor-${doctorId}/patient-${patientId}`
+      : null;
 
-  const doctor = DOCTORS.find(
-    (item) => item.id === id
-  );
-
-  const [messages, setMessages] =
-    useState<Message[]>(INITIAL_MESSAGES);
-
-  const [messageText, setMessageText] =
-    useState("");
-
-  const [isDoctorTyping, setIsDoctorTyping] =
-    useState(false);
-
-  const listReference =
-    useRef<FlatList<Message>>(null);
-
-  const getCurrentTime = () => {
-    return new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const handleSendMessage = () => {
-    const cleanedMessage = messageText.trim();
-
-    if (cleanedMessage.length === 0) {
+  const loadChatHistory = useCallback(async () => {
+    if (!roomKey) {
+      setIsLoading(false);
       return;
     }
 
-    const patientMessage: Message = {
-      id: Date.now().toString(),
-      sender: "patient",
-      text: cleanedMessage,
-      time: getCurrentTime(),
-    };
-
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      patientMessage,
-    ]);
-
-    setMessageText("");
-    setIsDoctorTyping(true);
-  };
-
-  useEffect(() => {
-    if (!isDoctorTyping) {
-      return;
+    try {
+      const savedMessages = await AsyncStorage.getItem(roomKey);
+      const parsed: unknown = savedMessages ? JSON.parse(savedMessages) : [];
+      if (Array.isArray(parsed)) {
+        setMessages(parsed as ChatMessage[]);
+      }
+    } catch (error) {
+      console.error("Failed to load chat:", error);
+    } finally {
+      setIsLoading(false);
     }
-
-    const timeout = setTimeout(() => {
-      const doctorMessage: Message = {
-        id: Date.now().toString(),
-        sender: "doctor",
-        text:
-          "Thank you for sharing that. How long have you been experiencing this problem?",
-        time: getCurrentTime(),
-      };
-
-      setMessages((previousMessages) => [
-        ...previousMessages,
-        doctorMessage,
-      ]);
-
-      setIsDoctorTyping(false);
-    }, 1500);
-
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [isDoctorTyping]);
+  }, [roomKey]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      listReference.current?.scrollToEnd({
-        animated: true,
+    void loadChatHistory();
+
+    const interval = setInterval(() => {
+      void loadChatHistory();
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [loadChatHistory]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToEnd({ animated: true });
       });
-    }, 100);
+    }
+  }, [messages.length]);
 
-    return () => {
-      clearTimeout(timeout);
+  const handleSend = async () => {
+    const text = inputText.trim();
+    if (!text || !roomKey || !currentUserId) {
+      return;
+    }
+
+    const newMessage: ChatMessage = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      senderId: currentUserId,
+      text,
+      sentAt: new Date().toISOString(),
     };
-  }, [messages]);
 
-  if (!doctor) {
+    setInputText("");
+
+    try {
+      const latestValue = await AsyncStorage.getItem(roomKey);
+      const latestParsed: unknown = latestValue ? JSON.parse(latestValue) : [];
+      const latestMessages = Array.isArray(latestParsed)
+        ? (latestParsed as ChatMessage[])
+        : [];
+      const updatedMessages = [...latestMessages, newMessage];
+
+      setMessages(updatedMessages);
+      await AsyncStorage.setItem(roomKey, JSON.stringify(updatedMessages));
+    } catch (error) {
+      console.error("Failed to save message:", error);
+      setMessages((previous) => [...previous, newMessage]);
+    }
+  };
+
+  if (!doctorId || !patientId || !currentUserId || !roomKey) {
     return (
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.notFoundContainer}>
-          <Text style={styles.notFoundTitle}>
-            Doctor not found
+      <SafeAreaView style={styles.container}>
+        <View style={styles.invalidRoom}>
+          <Text style={styles.invalidRoomTitle}>Chat room unavailable</Text>
+          <Text style={styles.invalidRoomText}>
+            Open chat from an appointment card on a dashboard.
           </Text>
-
-          <Text
-            style={styles.backText}
-            onPress={() => router.back()}
-          >
-            Go Back
-          </Text>
+          <TouchableOpacity style={styles.returnButton} onPress={() => router.back()}>
+            <Text style={styles.returnButtonText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={10}
-    >
-        {/* Chat Header */}
-
-        <View style={styles.header}>
-          <Text
-            style={styles.headerBackText}
-            onPress={() => router.back()}
-          >
-            ‹ Back
-          </Text>
-
-          <View style={styles.headerInformation}>
-            <Text style={styles.doctorName}>
-              {doctor.name}
-            </Text>
-
-            <Text style={styles.onlineText}>
-              ● Online
-            </Text>
-          </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>‹ Back</Text>
+        </TouchableOpacity>
+        <View style={styles.headerTextArea}>
+          <Text style={styles.headerTitle}>{targetName || "Consultation Chat"}</Text>
+          <Text style={styles.headerSubtitle}>Saved on this device</Text>
         </View>
+      </View>
 
-        {/* Message List */}
-
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.chatArea}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+      >
         <FlatList
-          ref={listReference}
+          ref={listRef}
           data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MessageBubble message={item} />
-          )}
-          contentContainerStyle={
-            styles.messageList
-          }
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={
-            isDoctorTyping ? (
-              <View style={styles.typingBubble}>
-                <Text style={styles.typingText}>
-                  {doctor.name} is typing...
+          keyExtractor={(item: ChatMessage) => item.id}
+          contentContainerStyle={styles.messageList}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }: { item: ChatMessage }) => {
+            const isMe = item.senderId === currentUserId;
+            return (
+              <View
+                style={[
+                  styles.messageBubble,
+                  isMe ? styles.myMessage : styles.theirMessage,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.messageText,
+                    isMe ? styles.myMessageText : styles.theirMessageText,
+                  ]}
+                >
+                  {item.text}
+                </Text>
+                <Text
+                  style={[
+                    styles.timeText,
+                    isMe ? styles.myTimeText : styles.theirTimeText,
+                  ]}
+                >
+                  {new Date(item.sentAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </Text>
               </View>
-            ) : null
+            );
+          }}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              {isLoading ? "Loading chat..." : "No messages yet. Start the conversation."}
+            </Text>
           }
         />
 
-        {/* Message Input */}
-
-        <View style={styles.inputSection}>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={messageText}
-              onChangeText={setMessageText}
-              placeholder="Write your message..."
-              placeholderTextColor={
-                COLORS.textMuted
-              }
-              multiline
-              maxLength={500}
-            />
-
-            <Pressable
-              style={[
-                styles.sendButton,
-                messageText.trim().length === 0 &&
-                  styles.disabledButton,
-              ]}
-              onPress={handleSendMessage}
-              disabled={
-                messageText.trim().length === 0
-              }
-            >
-              <Text style={styles.sendText}>
-                Send
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.characterCount}>
-            {messageText.length}/500
-          </Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor="#94A3B8"
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={1000}
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, !inputText.trim() && styles.disabledSendButton]}
+            onPress={handleSend}
+            disabled={!inputText.trim()}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -233,141 +214,33 @@ export default function ConsultationChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  keyboardContainer: {
-    flex: 1,
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-
-  headerBackText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#CCFBF1",
-    marginRight: 16,
-  },
-
-  headerInformation: {
-    flex: 1,
-  },
-
-  doctorName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-
-  onlineText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#86EFAC",
-    marginTop: 3,
-  },
-
-  messageList: {
-    flexGrow: 1,
-    paddingHorizontal: 14,
-    paddingTop: 18,
-    paddingBottom: 12,
-  },
-
-  typingBubble: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
-
-  typingText: {
-    fontSize: 12,
-    fontStyle: "italic",
-    color: COLORS.textSecondary,
-  },
-
-  inputSection: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-  },
-
-  input: {
-    flex: 1,
-    minHeight: 46,
-    maxHeight: 100,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    textAlignVertical: "top",
-  },
-
-  sendButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingHorizontal: 17,
-    paddingVertical: 14,
-    marginLeft: 8,
-  },
-
-  disabledButton: {
-    backgroundColor: COLORS.disabled,
-  },
-
-  sendText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-
-  characterCount: {
-    fontSize: 10,
-    color: COLORS.textMuted,
-    marginTop: 5,
-    marginLeft: 4,
-  },
-
-  notFoundContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  notFoundTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
-
-  backText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.primary,
-    marginTop: 14,
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  header: { minHeight: 64, backgroundColor: "#0D1F4E", flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10 },
+  backButton: { paddingRight: 16, paddingVertical: 8 },
+  backButtonText: { color: "#38BDF8", fontSize: 16, fontWeight: "600" },
+  headerTextArea: { flex: 1 },
+  headerTitle: { color: "#FFFFFF", fontSize: 18, fontWeight: "bold" },
+  headerSubtitle: { color: "#CBD5E1", fontSize: 11, marginTop: 2 },
+  chatArea: { flex: 1 },
+  messageList: { flexGrow: 1, padding: 16, paddingBottom: 10 },
+  messageBubble: { maxWidth: "80%", padding: 12, borderRadius: 14, marginBottom: 10 },
+  myMessage: { alignSelf: "flex-end", backgroundColor: "#0D9488", borderBottomRightRadius: 4 },
+  theirMessage: { alignSelf: "flex-start", backgroundColor: "#E2E8F0", borderBottomLeftRadius: 4 },
+  messageText: { fontSize: 15, lineHeight: 20 },
+  myMessageText: { color: "#FFFFFF" },
+  theirMessageText: { color: "#1E293B" },
+  timeText: { fontSize: 10, marginTop: 5, alignSelf: "flex-end" },
+  myTimeText: { color: "#CCFBF1" },
+  theirTimeText: { color: "#64748B" },
+  emptyText: { textAlign: "center", color: "#94A3B8", marginTop: 50 },
+  inputContainer: { flexDirection: "row", alignItems: "flex-end", padding: 12, borderTopWidth: 1, borderTopColor: "#E2E8F0", backgroundColor: "#FFFFFF" },
+  input: { flex: 1, maxHeight: 110, minHeight: 44, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, color: "#0F172A" },
+  sendButton: { backgroundColor: "#0D9488", paddingVertical: 12, paddingHorizontal: 18, borderRadius: 22, marginLeft: 8 },
+  disabledSendButton: { backgroundColor: "#94A3B8" },
+  sendButtonText: { color: "#FFFFFF", fontWeight: "bold" },
+  invalidRoom: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  invalidRoomTitle: { fontSize: 22, fontWeight: "800", color: "#0F172A" },
+  invalidRoomText: { color: "#64748B", textAlign: "center", marginTop: 8 },
+  returnButton: { backgroundColor: "#0D9488", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, marginTop: 18 },
+  returnButtonText: { color: "#FFFFFF", fontWeight: "700" },
 });

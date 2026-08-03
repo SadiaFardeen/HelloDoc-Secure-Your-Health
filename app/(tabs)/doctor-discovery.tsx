@@ -2,10 +2,10 @@ import { router } from "expo-router";
 import { useState } from "react";
 
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    View,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,10 +17,10 @@ import SearchBar from "../../components/search-bar";
 import { COLORS } from "../../constants/theme";
 
 import {
-    Doctor,
-    DOCTOR_CATEGORIES,
-    DOCTORS,
-} from "../../data/doctors";
+  Doctor,
+  DOCTOR_CATEGORIES,
+  DOCTORS,
+} from "../../data/doctor";
 
 export default function HomeScreen() {
   const [searchText, setSearchText] =
@@ -61,7 +61,7 @@ export default function HomeScreen() {
     doctor: Doctor
   ) => {
     router.push({
-      pathname: "../doctor/[id]",
+      pathname: "/doctor/[id]",
       params: {
         id: doctor.id,
       },

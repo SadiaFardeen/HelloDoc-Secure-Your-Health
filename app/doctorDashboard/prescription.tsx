@@ -1,387 +1,225 @@
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useApp } from "@/Context/AppContext";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useMemo, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { useApp } from "../../Context/AppContext";
+
+import { Prescription } from "../../data/mockData";
 
 interface PrescriptionForm {
-  patientName: string;
   medicineName: string;
   dosage: string;
   instructions: string;
   notes: string;
 }
 
-interface TouchedFields {
-  patientName: boolean;
-  medicineName: boolean;
-  dosage: boolean;
-  instructions: boolean;
-  notes: boolean;
-}
-
 export default function PrescriptionScreen() {
-  const { setPrescriptions } = useApp();
+  const params = useLocalSearchParams<{
+    appointmentId?: string;
+    doctorId?: string;
+    patientId?: string;
+  }>();
+  const {
+    addPrescription,
+    appointments,
+    currentDoctorId,
+    patientAccounts,
+    doctors,
+  } = useApp();
 
-  const [form, setForm] =
-    useState<PrescriptionForm>({
-      patientName: "",
-      medicineName: "",
-      dosage: "",
-      instructions: "",
-      notes: "",
-    });
+  const doctorId = params.doctorId ?? currentDoctorId ?? undefined;
+  const appointment = appointments.find(
+    (item) =>
+      item.id === params.appointmentId &&
+      item.doctorId === doctorId &&
+      item.patientId === params.patientId
+  );
+  const patient = patientAccounts.find(
+    (account) => account.id === appointment?.patientId
+  );
+  const doctor = doctors.find((item) => item.id === doctorId);
 
-  const [touched, setTouched] =
-    useState<TouchedFields>({
-      patientName: false,
-      medicineName: false,
-      dosage: false,
-      instructions: false,
-      notes: false,
-    });
-
-  const [errors, setErrors] = useState({
-    patientName: "",
+  const [form, setForm] = useState<PrescriptionForm>({
     medicineName: "",
     dosage: "",
     instructions: "",
     notes: "",
   });
+  const [feedback, setFeedback] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateField = (
-    field: keyof PrescriptionForm,
-    value: string
-  ) => {
-    setForm((previousForm) => ({
-      ...previousForm,
-      [field]: value,
-    }));
+  const isFormValid = useMemo(
+    () =>
+      form.medicineName.trim().length > 0 &&
+      form.dosage.trim().length > 0 &&
+      form.instructions.trim().length > 0 &&
+      form.notes.length <= 500,
+    [form]
+  );
+
+  const updateField = (field: keyof PrescriptionForm, value: string) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+    setFeedback("");
   };
 
-  const handleBlur = (
-    field: keyof TouchedFields
-  ) => {
-    setTouched((previousTouched) => ({
-      ...previousTouched,
-      [field]: true,
-    }));
-  };
+  const handleSave = async () => {
+    setFeedback("");
 
-  useEffect(() => {
-    const newErrors = {
-      patientName: "",
-      medicineName: "",
-      dosage: "",
-      instructions: "",
-      notes: "",
-    };
-
-    if (
-      touched.patientName &&
-      form.patientName.trim() === ""
-    ) {
-      newErrors.patientName =
-        "Patient name is required.";
-    }
-
-    if (
-      touched.medicineName &&
-      form.medicineName.trim() === ""
-    ) {
-      newErrors.medicineName =
-        "Medicine name is required.";
-    }
-
-    if (
-      touched.dosage &&
-      form.dosage.trim() === ""
-    ) {
-      newErrors.dosage =
-        "Dosage is required.";
-    }
-
-    if (
-      touched.instructions &&
-      form.instructions.trim() === ""
-    ) {
-      newErrors.instructions =
-        "Instructions are required.";
-    }
-
-    if (form.notes.length > 500) {
-      newErrors.notes =
-        "Notes cannot exceed 500 characters.";
-    }
-
-    setErrors(newErrors);
-  }, [form, touched]);
-
-  const isFormValid =
-    form.patientName.trim() !== "" &&
-    form.medicineName.trim() !== "" &&
-    form.dosage.trim() !== "" &&
-    form.instructions.trim() !== "" &&
-    form.notes.length <= 500;
-
-  const handleSavePrescription = () => {
-    setTouched({
-      patientName: true,
-      medicineName: true,
-      dosage: true,
-      instructions: true,
-      notes: true,
-    });
-
-    if (!isFormValid) {
-      Alert.alert(
-        "Incomplete Prescription",
-        "Please complete all required fields."
+    if (!appointment || !patient || !doctor) {
+      setFeedback(
+        "This prescription is not linked to a valid doctor-patient appointment."
       );
       return;
     }
 
-    const prescriptionId =
-      "p" + Date.now().toString();
+    if (!isFormValid) {
+      setFeedback("Medicine, dosage and instructions are required.");
+      return;
+    }
 
-    const newPrescription = {
-      id: prescriptionId,
+    // This is the exact account email that the patient uses to log in.
+    const patientEmail = patient.email.toLowerCase();
 
-      appointmentId: "",
-
-      patientName:
-        form.patientName.trim(),
-
-      medicines: [
-        `${form.medicineName.trim()} (${form.dosage.trim()})`,
-      ],
-
-      notes:
-        `${form.instructions.trim()}\n\nNotes: ${
-          form.notes.trim() || "No additional notes."
-        }`,
+    const newPrescription: Prescription = {
+      id: `prescription-${Date.now()}`,
+      appointmentId: appointment.id,
+      patientId: patient.id,
+      patientName: patient.name,
+      patientEmail,
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      medicines: [`${form.medicineName.trim()} — ${form.dosage.trim()}`],
+      notes: `${form.instructions.trim()}\n\nAdditional notes: ${
+        form.notes.trim() || "None"
+      }`,
+      createdAt: new Date().toISOString(),
     };
 
-    setPrescriptions(
-      (previousPrescriptions) => [
-        ...previousPrescriptions,
-        newPrescription,
-      ]
-    );
+    try {
+      setIsSubmitting(true);
+      await addPrescription(newPrescription);
 
-    Alert.alert(
-      "Prescription Saved",
-      `Prescription for ${form.patientName} has been saved successfully.`,
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            router.back();
-          },
+      // Navigate directly instead of waiting for an Alert callback on web.
+      router.replace({
+        pathname: "/doctorDashboard/dashboard",
+        params: {
+          doctorId: doctor.id,
+          prescriptionStatus: "success",
+          assignedPatient: patient.name,
         },
-      ]
-    );
+      });
+    } catch (error) {
+      console.error("Failed to save prescription:", error);
+      setFeedback("Could not assign the prescription. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (!appointment || !patient || !doctor) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.title}>No patient appointment selected</Text>
+          <Text style={styles.errorText}>
+            Open this screen from a patient card on the doctor dashboard.
+          </Text>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backButtonText}>
-            ← Back
-          </Text>
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>← Back</Text>
         </Pressable>
 
-        <Text style={styles.title}>
-          Create Prescription
-        </Text>
+        <Text style={styles.title}>Create Prescription</Text>
 
-        <Text style={styles.sectionTitle}>
-          Patient Information
-        </Text>
-
-        <Text style={styles.label}>
-          Patient Name *
-        </Text>
-
-        <TextInput
-          style={[
-            styles.input,
-            errors.patientName &&
-              styles.errorInput,
-          ]}
-          placeholder="Enter patient name"
-          value={form.patientName}
-          onChangeText={(value) =>
-            updateField(
-              "patientName",
-              value
-            )
-          }
-          onBlur={() =>
-            handleBlur("patientName")
-          }
-        />
-
-        {errors.patientName ? (
-          <Text style={styles.errorText}>
-            {errors.patientName}
+        <View style={styles.assignmentCard}>
+          <Text style={styles.assignmentLabel}>Assigned Patient</Text>
+          <Text style={styles.assignmentName}>{patient.name}</Text>
+          <Text style={styles.assignmentText}>{patient.email}</Text>
+          <Text style={styles.assignmentText}>
+            Appointment: {appointment.date} at {appointment.time}
           </Text>
-        ) : null}
+          <Text style={styles.assignmentText}>Doctor: {doctor.name}</Text>
+        </View>
 
-        <Text style={styles.sectionTitle}>
-          Medicine Information
+        <Text style={styles.infoText}>
+          This prescription will be visible only when {patient.email} logs in.
         </Text>
 
-        <Text style={styles.label}>
-          Medicine Name *
-        </Text>
-
+        <Text style={styles.label}>Medicine Name *</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.medicineName &&
-              styles.errorInput,
-          ]}
+          style={styles.input}
           placeholder="Enter medicine name"
+          placeholderTextColor="#94A3B8"
           value={form.medicineName}
-          onChangeText={(value) =>
-            updateField(
-              "medicineName",
-              value
-            )
-          }
-          onBlur={() =>
-            handleBlur("medicineName")
-          }
+          onChangeText={(value: string) => updateField("medicineName", value)}
         />
 
-        {errors.medicineName ? (
-          <Text style={styles.errorText}>
-            {errors.medicineName}
-          </Text>
-        ) : null}
-
-        <Text style={styles.label}>
-          Dosage *
-        </Text>
-
+        <Text style={styles.label}>Dosage *</Text>
         <TextInput
-          style={[
-            styles.input,
-            errors.dosage &&
-              styles.errorInput,
-          ]}
-          placeholder="Example: 1+0+1"
+          style={styles.input}
+          placeholder="Example: 1+0+1 for 5 days"
+          placeholderTextColor="#94A3B8"
           value={form.dosage}
-          onChangeText={(value) =>
-            updateField(
-              "dosage",
-              value
-            )
-          }
-          onBlur={() =>
-            handleBlur("dosage")
-          }
+          onChangeText={(value: string) => updateField("dosage", value)}
         />
 
-        {errors.dosage ? (
-          <Text style={styles.errorText}>
-            {errors.dosage}
-          </Text>
-        ) : null}
-
-        <Text style={styles.label}>
-          Instructions *
-        </Text>
-
+        <Text style={styles.label}>Instructions *</Text>
         <TextInput
-          style={[
-            styles.input,
-            styles.multilineInput,
-            errors.instructions &&
-              styles.errorInput,
-          ]}
+          style={[styles.input, styles.multilineInput]}
           placeholder="Example: Take after meals"
+          placeholderTextColor="#94A3B8"
           value={form.instructions}
-          onChangeText={(value) =>
-            updateField(
-              "instructions",
-              value
-            )
-          }
-          onBlur={() =>
-            handleBlur("instructions")
-          }
+          onChangeText={(value: string) => updateField("instructions", value)}
           multiline
           textAlignVertical="top"
         />
 
-        {errors.instructions ? (
-          <Text style={styles.errorText}>
-            {errors.instructions}
-          </Text>
-        ) : null}
-
-        <Text style={styles.label}>
-          Additional Notes
-        </Text>
-
+        <Text style={styles.label}>Additional Notes</Text>
         <TextInput
-          style={[
-            styles.input,
-            styles.notesInput,
-            errors.notes &&
-              styles.errorInput,
-          ]}
-          placeholder="Write additional notes..."
+          style={[styles.input, styles.notesInput]}
+          placeholder="Optional notes"
+          placeholderTextColor="#94A3B8"
           value={form.notes}
-          onChangeText={(value) => {
-            if (value.length <= 500) {
-              updateField("notes", value);
-            }
-          }}
-          onBlur={() =>
-            handleBlur("notes")
-          }
+          onChangeText={(value: string) => updateField("notes", value.slice(0, 500))}
           multiline
           maxLength={500}
           textAlignVertical="top"
         />
+        <Text style={styles.counter}>{form.notes.length}/500</Text>
 
-        <Text style={styles.characterCounter}>
-          {form.notes.length}/500 characters
-        </Text>
-
-        {errors.notes ? (
-          <Text style={styles.errorText}>
-            {errors.notes}
-          </Text>
+        {feedback ? (
+          <View style={styles.feedbackBox}>
+            <Text style={styles.feedbackText}>{feedback}</Text>
+          </View>
         ) : null}
 
         <Pressable
-          style={[
-            styles.saveButton,
-            !isFormValid &&
-              styles.disabledButton,
-          ]}
-          onPress={handleSavePrescription}
+          style={[styles.saveButton, isSubmitting && styles.disabledButton]}
+          onPress={() => void handleSave()}
+          disabled={isSubmitting}
         >
           <Text style={styles.saveButtonText}>
-            Save Prescription
+            {isSubmitting ? "Assigning..." : "Assign Prescription"}
           </Text>
         </Pressable>
       </ScrollView>
@@ -390,16 +228,20 @@ export default function PrescriptionScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { padding: 20, paddingBottom: 50 },
+  errorContainer: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
   },
-
-  container: {
-    padding: 20,
-    paddingBottom: 50,
+  errorText: {
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 8,
+    lineHeight: 20,
   },
-
   backButton: {
     alignSelf: "flex-start",
     paddingVertical: 8,
@@ -408,36 +250,47 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#E2E8F0",
   },
-
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0F172A",
+  backButtonText: { fontSize: 16, fontWeight: "600", color: "#0F172A" },
+  title: { fontSize: 28, fontWeight: "bold", color: "#0F172A", marginBottom: 20 },
+  assignmentCard: {
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#0F172A",
-    marginBottom: 24,
+  assignmentLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#047857",
+    textTransform: "uppercase",
   },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginTop: 10,
-    marginBottom: 15,
+  assignmentName: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#065F46",
+    marginTop: 6,
   },
-
+  assignmentText: { fontSize: 13, color: "#047857", marginTop: 4 },
+  infoText: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#BFDBFE",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    color: "#1D4ED8",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
   label: {
     fontSize: 14,
     fontWeight: "600",
     color: "#334155",
     marginBottom: 7,
-    marginTop: 10,
+    marginTop: 12,
   },
-
   input: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -448,32 +301,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#0F172A",
   },
-
-  multilineInput: {
-    minHeight: 90,
+  multilineInput: { minHeight: 90 },
+  notesInput: { minHeight: 110 },
+  counter: { textAlign: "right", fontSize: 12, color: "#64748B", marginTop: 5 },
+  feedbackBox: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 14,
   },
-
-  notesInput: {
-    minHeight: 120,
-  },
-
-  errorInput: {
-    borderColor: "#EF4444",
-  },
-
-  errorText: {
-    color: "#EF4444",
-    fontSize: 12,
-    marginTop: 5,
-  },
-
-  characterCounter: {
-    textAlign: "right",
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 5,
-  },
-
+  feedbackText: { color: "#B91C1C", fontSize: 13, lineHeight: 19 },
   saveButton: {
     backgroundColor: "#0D9488",
     paddingVertical: 15,
@@ -481,14 +320,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 25,
   },
-
-  disabledButton: {
-    backgroundColor: "#94A3B8",
-  },
-
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  disabledButton: { opacity: 0.65 },
+  saveButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });
