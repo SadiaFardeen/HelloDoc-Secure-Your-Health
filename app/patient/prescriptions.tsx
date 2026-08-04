@@ -120,7 +120,12 @@ export default function PatientPrescriptionsScreen() {
                   router.push({
                     pathname: "/patient/prescription-details",
                     params: {
-                      id: prescription.id,
+                      doctorName: prescription.doctorName,
+        patientName: prescription.patientName,
+        patientEmail: prescription.patientEmail,
+        medicines: JSON.stringify(prescription.medicines),
+        notes: prescription.notes,
+        createdAt: prescription.createdAt,
                     },
                   })
                 }
