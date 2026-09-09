@@ -1,34 +1,67 @@
-const Doctor = require("../models/Doctor");
+const pool = require("../config/db");
 
-const getDoctors = async (req, res, next) => {
-  try {
-    const doctors = await Doctor.find().sort({ name: 1 });
 
-    res.status(200).json(doctors);
-  } catch (error) {
-    next(error);
-  }
-};
+const getDoctors = async (req,res)=>{
 
-const getDoctorById = async (req, res, next) => {
-  try {
-    const doctor = await Doctor.findOne({
-      id: req.params.id,
-    });
+    try{
 
-    if (!doctor) {
-      return res.status(404).json({
-        message: "Doctor not found",
-      });
+        const result =
+        await pool.query(
+            "SELECT * FROM doctors ORDER BY id"
+        );
+
+
+        res.json(result.rows);
+
+
+    }catch(error){
+
+        res.status(500).json({
+            error:error.message
+        });
+
     }
 
-    res.status(200).json(doctor);
-  } catch (error) {
-    next(error);
-  }
 };
 
-module.exports = {
-  getDoctors,
-  getDoctorById,
+
+
+const getDoctorById = async(req,res)=>{
+
+    try{
+
+        const result =
+        await pool.query(
+            "SELECT * FROM doctors WHERE id=$1",
+            [req.params.id]
+        );
+
+
+        if(result.rows.length===0){
+
+            return res.status(404).json({
+                message:"Doctor not found"
+            });
+
+        }
+
+
+        res.json(result.rows[0]);
+
+
+    }catch(error){
+
+        res.status(500).json({
+            error:error.message
+        });
+
+    }
+
+};
+
+
+
+module.exports={
+    getDoctors,
+    getDoctorById
 };
