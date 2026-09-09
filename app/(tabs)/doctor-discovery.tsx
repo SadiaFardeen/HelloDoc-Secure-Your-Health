@@ -1,11 +1,18 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,27 +23,65 @@ import SearchBar from "../../components/search-bar";
 
 import { COLORS } from "../../constants/theme";
 
-import {
-    Doctor,
-    DOCTOR_CATEGORIES,
-    DOCTORS,
-} from "../../data/doctors";
+import { Doctor } from "../../data/doctors";
+import api from "../../services/api";
 
 export default function HomeScreen() {
-  const [searchText, setSearchText] =
-    useState("");
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
 
-  const [
-    selectedCategory,
-    setSelectedCategory,
-  ] = useState("All");
+  const [searchText, setSearchText] = useState("");
 
-  const filteredDoctors = DOCTORS.filter(
-    (doctor) => {
-      const query = searchText
-        .trim()
-        .toLowerCase();
+  const [selectedCategory, setSelectedCategory] =
+    useState("All");
 
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  // Load doctors from backend
+  const loadDoctors = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response =
+        await api.get<Doctor[]>("/doctors");
+
+      setDoctors(response.data);
+    } catch (err) {
+      console.log("Doctor loading error:", err);
+
+      setError(
+        "Unable to load doctors. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDoctors();
+  }, [loadDoctors]);
+
+  // Create categories from doctors received from API
+  const doctorCategories = useMemo(() => {
+    const categories = doctors
+      .map((doctor) => doctor.specialization)
+      .filter(Boolean);
+
+    return [
+      "All",
+      ...Array.from(new Set(categories)),
+    ];
+  }, [doctors]);
+
+  // Search + category filter
+  const filteredDoctors = useMemo(() => {
+    const query = searchText
+      .trim()
+      .toLowerCase();
+
+    return doctors.filter((doctor) => {
       const matchesSearch =
         doctor.name
           .toLowerCase()
@@ -53,9 +98,15 @@ export default function HomeScreen() {
         doctor.specialization ===
           selectedCategory;
 
-      return matchesSearch && matchesCategory;
-    }
-  );
+      return (
+        matchesSearch && matchesCategory
+      );
+    });
+  }, [
+    doctors,
+    searchText,
+    selectedCategory,
+  ]);
 
   const handleDoctorPress = (
     doctor: Doctor
@@ -68,43 +119,104 @@ export default function HomeScreen() {
     });
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.stateContainer}>
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+          />
+
+          <Text style={styles.stateText}>
+            Loading doctors...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.stateContainer}>
+          <Text style={styles.errorTitle}>
+            Something went wrong
+          </Text>
+
+          <Text style={styles.stateText}>
+            {error}
+          </Text>
+
+          <Pressable
+            style={styles.retryButton}
+            onPress={loadDoctors}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading doctors"
+            accessibilityHint="Attempts to load the doctor list again"
+          >
+            <Text
+              style={styles.retryButtonText}
+            >
+              Try Again
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       {/* Header */}
+
       <View style={styles.header}>
-     <Text
-        style={styles.backText}
-        onPress={() => router.replace("/(tabs)")}
-    >
-     ‹ Back to Dashboard
-    </Text>
-  <View style={styles.headerTopRow}>
-    <View>
-      <Text style={styles.brandName}>
-        HelloDoc
-      </Text>
+        <Text
+          style={styles.backText}
+          onPress={() =>
+            router.replace("/(tabs)")
+          }
+        >
+          ‹ Back to Dashboard
+        </Text>
 
-      <Text style={styles.tagline}>
-        We secure your health
-      </Text>
-    </View>
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={styles.brandName}>
+              HelloDoc
+            </Text>
 
-    <View style={styles.profileCircle}>
-      <Text style={styles.profileText}>
-        P
-      </Text>
-    </View>
-  </View>
+            <Text style={styles.tagline}>
+              We secure your health
+            </Text>
+          </View>
 
-  <Text style={styles.welcomeText}>
-    Find the right doctor
-  </Text>
+          <View
+            style={styles.profileCircle}
+          >
+            <Text
+              style={styles.profileText}
+            >
+              P
+            </Text>
+          </View>
+        </View>
 
-  <Text style={styles.welcomeSubtext}>
-    Search trusted specialists and start a secure
-    consultation.
-  </Text>
-</View>
+        <Text
+          style={styles.welcomeText}
+        >
+          Find the right doctor
+        </Text>
+
+        <Text
+          style={styles.welcomeSubtext}
+        >
+          Search trusted specialists and
+          start a secure consultation.
+        </Text>
+      </View>
 
       {/* Search Bar */}
 
@@ -116,9 +228,11 @@ export default function HomeScreen() {
 
       {/* Category Filter */}
 
-      <View style={styles.categorySection}>
+      <View
+        style={styles.categorySection}
+      >
         <FlatList
-          data={DOCTOR_CATEGORIES}
+          data={doctorCategories}
           keyExtractor={(item) => item}
           horizontal
           showsHorizontalScrollIndicator={
@@ -150,7 +264,9 @@ export default function HomeScreen() {
         </Text>
 
         {selectedCategory !== "All" ? (
-          <Text style={styles.categoryName}>
+          <Text
+            style={styles.categoryName}
+          >
             {selectedCategory}
           </Text>
         ) : null}
@@ -173,11 +289,15 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>
+            <Text
+              style={styles.emptyTitle}
+            >
               No doctors found
             </Text>
 
-            <Text style={styles.emptyText}>
+            <Text
+              style={styles.emptyText}
+            >
               Try another name,
               specialization or category.
             </Text>
@@ -189,81 +309,70 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-backText: {
-  fontSize: 14,
-  fontWeight: "600",
-  color: "#CCFBF1",
-  marginBottom: 14,
-},
-  headerTopRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-},
-
-brandName: {
-  fontSize: 22,
-  fontWeight: "900",
-  color: "#FFFFFF",
-},
-
-tagline: {
-  fontSize: 11,
-  color: "#99F6E4",
-  marginTop: 2,
-},
-
-profileCircle: {
-  width: 42,
-  height: 42,
-  borderRadius: 21,
-  backgroundColor: COLORS.primary,
-  alignItems: "center",
-  justifyContent: "center",
-},
-
-profileText: {
-  color: "#FFFFFF",
-  fontWeight: "800",
-},
-
-welcomeText: {
-  fontSize: 26,
-  fontWeight: "900",
-  color: "#FFFFFF",
-  marginTop: 28,
-},
-
-welcomeSubtext: {
-  fontSize: 13,
-  color: "#D9F9F4",
-  marginTop: 7,
-},
-
   screen: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
 
   header: {
-  backgroundColor: COLORS.secondary,
-  paddingHorizontal: 20,
-  paddingTop: 20,
-  paddingBottom: 26,
-  borderBottomLeftRadius: 28,
-  borderBottomRightRadius: 28,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 26,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
 
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
+  backText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#CCFBF1",
+    marginBottom: 14,
+  },
+
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  brandName: {
+    fontSize: 22,
+    fontWeight: "900",
     color: "#FFFFFF",
   },
 
-  subtitle: {
+  tagline: {
+    fontSize: 11,
+    color: "#99F6E4",
+    marginTop: 2,
+  },
+
+  profileCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  profileText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
+
+  welcomeText: {
+    fontSize: 26,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    marginTop: 28,
+  },
+
+  welcomeSubtext: {
     fontSize: 13,
-    color: "#CCFBF1",
-    marginTop: 4,
+    color: "#D9F9F4",
+    marginTop: 7,
   },
 
   categorySection: {
@@ -321,5 +430,41 @@ welcomeSubtext: {
     textAlign: "center",
     lineHeight: 20,
     marginTop: 8,
+  },
+
+  stateContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 30,
+  },
+
+  stateText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 21,
+    marginTop: 12,
+  },
+
+  errorTitle: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#DC2626",
+    textAlign: "center",
+  },
+
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
