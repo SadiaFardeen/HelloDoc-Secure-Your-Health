@@ -106,33 +106,53 @@ export default function PatientDashboard() {
         ) : null}
 
         <View style={styles.actionContainer}>
-          <Pressable
-            style={styles.primaryButton}
-            onPress={() =>
-              router.push({
-                pathname: "/patient/doctor",
-                params: { patientId: patient.id },
-              })
-            }
-          >
-            <Text style={styles.buttonText}>🔍 Find & Book a Doctor</Text>
-          </Pressable>
+  <Pressable
+    style={styles.primaryButton}
+    onPress={() =>
+      router.push({
+        pathname: "/patient/doctor",
+        params: { patientId: patient.id },
+      })
+    }
+  >
+    <Text style={styles.buttonText}>🔍 Find & Book a Doctor</Text>
+  </Pressable>
 
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() =>
-              router.push({
-                pathname: "/patient/prescriptions",
-                params: { patientId: patient.id },
-              })
-            }
-          >
-            <Text style={styles.buttonText}>
-              📄 View My Prescriptions ({patientPrescriptionCount})
-            </Text>
-          </Pressable>
-        </View>
+  <Pressable
+    style={styles.secondaryButton}
+    onPress={() =>
+      router.push({
+        pathname: "/patient/prescriptions",
+        params: { patientId: patient.id },
+      })
+    }
+  >
+    <Text style={styles.buttonText}>
+      📄 View My Prescriptions ({patientPrescriptionCount})
+    </Text>
+  </Pressable>
 
+  <Pressable
+    style={styles.secondaryButton}
+    onPress={() => router.push("/patient/medical-history")}
+  >
+    <Text style={styles.buttonText}>🏥 Medical History</Text>
+  </Pressable>
+
+  <Pressable
+    style={styles.secondaryButton}
+    onPress={() => router.push("/patient/profile-settings")}
+  >
+    <Text style={styles.buttonText}>👤 Profile Settings</Text>
+  </Pressable>
+
+  <Pressable
+    style={styles.secondaryButton}
+    onPress={() => router.push("/patient/notifications")}
+  >
+    <Text style={styles.buttonText}>🔔 Notifications</Text>
+  </Pressable>
+</View>
         <Text style={styles.sectionTitle}>Your Appointments</Text>
 
         {patientAppointments.length === 0 ? (
