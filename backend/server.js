@@ -81,6 +81,32 @@ app.get("/users/:id", async (req, res) => {
   }
 });
 
+// Update User Profile
+app.put("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone } = req.body;
+
+    const result = await pool.query(
+      `UPDATE users
+       SET name = $1,
+           email = $2,
+           phone = $3
+       WHERE id = $4
+       RETURNING *`,
+      [name, email, phone, id]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to update user profile",
+    });
+  }
+});
+
 const PORT = 5000;
 
 app.listen(PORT, () => {
