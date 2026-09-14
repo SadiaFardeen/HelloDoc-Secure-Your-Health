@@ -24,7 +24,7 @@ app.get("/test-db", async (req, res) => {
   }
 });
 
-// Medical History API
+// Get All Medical History
 app.get("/medical-history", async (req, res) => {
   try {
     const result = await pool.query(
@@ -37,6 +37,26 @@ app.get("/medical-history", async (req, res) => {
 
     res.status(500).json({
       error: "Failed to fetch medical history",
+    });
+  }
+});
+
+// Get Single Medical History
+app.get("/medical-history/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      "SELECT * FROM medical_history WHERE id = $1",
+      [id]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to fetch medical history record",
     });
   }
 });
