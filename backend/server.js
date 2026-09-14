@@ -61,6 +61,26 @@ app.get("/medical-history/:id", async (req, res) => {
   }
 });
 
+// Get User Profile
+app.get("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      "SELECT * FROM users WHERE id = $1",
+      [id]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to fetch user profile",
+    });
+  }
+});
+
 const PORT = 5000;
 
 app.listen(PORT, () => {
