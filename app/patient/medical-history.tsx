@@ -1,5 +1,7 @@
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+    Pressable,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -25,6 +27,13 @@ export default function MedicalHistoryScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backText}>← Back</Text>
+        </Pressable>
+
         <Text style={styles.title}>Medical History</Text>
 
         <TextInput
@@ -66,6 +75,15 @@ const styles = StyleSheet.create({
 
   container: {
     padding: 20,
+  },
+
+  backButton: {
+    marginBottom: 15,
+  },
+
+  backText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 
   title: {

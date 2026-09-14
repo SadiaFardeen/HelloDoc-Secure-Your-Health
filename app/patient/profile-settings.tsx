@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
     Alert,
@@ -20,6 +21,13 @@ export default function ProfileSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backText}>← Back</Text>
+      </Pressable>
+
       <Text style={styles.title}>Profile Settings</Text>
 
       <View style={styles.form}>
@@ -57,6 +65,15 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#fff",
+  },
+
+  backButton: {
+    marginBottom: 15,
+  },
+
+  backText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 
   title: {
