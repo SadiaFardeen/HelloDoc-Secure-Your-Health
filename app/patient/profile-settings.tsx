@@ -21,20 +21,19 @@ export default function ProfileSettingsScreen() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/users/1`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name,
-            email,
-            phone,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/users/1`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          age,
+          bloodGroup,
+        }),
+      });
 
       const data = await response.json();
 
@@ -44,15 +43,15 @@ export default function ProfileSettingsScreen() {
           "Profile updated successfully"
         );
 
-        console.log(data);
+        console.log("Updated User:", data);
       } else {
         Alert.alert(
           "Error",
-          "Failed to update profile"
+          data.error || "Failed to update profile"
         );
       }
     } catch (error) {
-      console.error(error);
+      console.error("FETCH ERROR:", error);
 
       Alert.alert(
         "Error",
@@ -87,6 +86,7 @@ export default function ProfileSettingsScreen() {
           style={styles.input}
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
         />
 
         <Text>Phone</Text>
@@ -94,6 +94,7 @@ export default function ProfileSettingsScreen() {
           style={styles.input}
           value={phone}
           onChangeText={setPhone}
+          keyboardType="phone-pad"
         />
 
         <Text>Age</Text>

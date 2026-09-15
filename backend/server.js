@@ -85,16 +85,32 @@ app.get("/users/:id", async (req, res) => {
 app.put("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone } = req.body;
+
+    const {
+      name,
+      email,
+      phone,
+      age,
+      bloodGroup,
+    } = req.body;
 
     const result = await pool.query(
       `UPDATE users
        SET name = $1,
            email = $2,
-           phone = $3
-       WHERE id = $4
+           phone = $3,
+           age = $4,
+           blood_group = $5
+       WHERE id = $6
        RETURNING *`,
-      [name, email, phone, id]
+      [
+        name,
+        email,
+        phone,
+        age,
+        bloodGroup,
+        id,
+      ]
     );
 
     res.json(result.rows);
