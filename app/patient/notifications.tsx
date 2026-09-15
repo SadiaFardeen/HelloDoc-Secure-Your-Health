@@ -1,78 +1,67 @@
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React from "react";
 import {
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
-import {
-    INITIAL_MEDICAL_HISTORY,
-    MedicalHistory,
-} from "../../data/medicalHistory";
-
-export default function MedicalHistoryScreen() {
-  const [search, setSearch] = useState("");
-
-  const filteredHistory = useMemo(() => {
-    return INITIAL_MEDICAL_HISTORY.filter((item) =>
-      item.diagnosis.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search]);
+export default function NotificationsScreen() {
+  const notifications = [
+    {
+      id: "1",
+      title: "Prescription Updated",
+      message: "Dr. Sarah has updated your prescription.",
+    },
+    {
+      id: "2",
+      title: "Appointment Reminder",
+      message: "Your appointment is scheduled for tomorrow at 10:00 AM.",
+    },
+    {
+      id: "3",
+      title: "Doctor Message",
+      message: "Dr. Ahmed sent you a consultation message.",
+    },
+    {
+      id: "4",
+      title: "Booking Confirmed",
+      message: "Your appointment booking was confirmed successfully.",
+    },
+  ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backText}>← Back</Text>
         </Pressable>
 
-        <Text style={styles.title}>Medical History</Text>
+        <Text style={styles.title}>Notifications</Text>
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search diagnosis..."
-          value={search}
-          onChangeText={setSearch}
-        />
-
-        {filteredHistory.length === 0 ? (
-          <Text style={styles.emptyText}>No records found</Text>
+        {notifications.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              No notifications available
+            </Text>
+          </View>
         ) : (
-          filteredHistory.map((record: MedicalHistory) => (
-            <Pressable
-              key={record.id}
-              style={styles.card}
-              onPress={() =>
-                router.push({
-                  pathname: "/patient/medical-history-details",
-                  params: { id: record.id },
-                })
-              }
-            >
-              <Text style={styles.label}>
-                Diagnosis: {record.diagnosis}
+          notifications.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <Text style={styles.notificationTitle}>
+                {item.title}
               </Text>
 
-              <Text>
-                Prescription: {record.prescription}
+              <Text style={styles.notificationMessage}>
+                {item.message}
               </Text>
-
-              <Text>
-                Visit Date: {record.visitDate}
-              </Text>
-
-              <Text style={styles.detailsText}>
-                View Details →
-              </Text>
-            </Pressable>
+            </View>
           ))
         )}
       </ScrollView>
@@ -81,59 +70,64 @@ export default function MedicalHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
 
-  container: {
+  content: {
     padding: 20,
+    paddingBottom: 40,
   },
 
   backButton: {
     marginBottom: 15,
   },
 
-  backButtonText: {
+  backText: {
     fontSize: 16,
-    color: "#2563eb",
+    color: "#2563EB",
     fontWeight: "700",
   },
 
   title: {
     fontSize: 24,
     fontWeight: "700",
-    marginBottom: 16,
-  },
-
-  searchInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
     marginBottom: 20,
+    color: "#0F172A",
   },
 
   card: {
-    backgroundColor: "#f5f5f5",
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
 
-  label: {
+  notificationTitle: {
+    fontSize: 16,
     fontWeight: "700",
-    marginBottom: 4,
+    color: "#0F172A",
+    marginBottom: 6,
   },
 
-  detailsText: {
-    marginTop: 10,
-    color: "#2563eb",
-    fontWeight: "700",
+  notificationMessage: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 20,
+  },
+
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 12,
+    alignItems: "center",
   },
 
   emptyText: {
-    textAlign: "center",
-    marginTop: 20,
+    color: "#64748B",
+    fontSize: 15,
   },
 });
