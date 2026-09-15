@@ -63,6 +63,18 @@ export default function MedicalHistoryDetailsScreen() {
         <Text style={styles.text}>
           Patient ID: {record.patientId}
         </Text>
+
+        <Text style={styles.text}>
+          Age: {record.age}
+        </Text>
+
+        <Text style={styles.text}>
+          Weight: {record.weight} kg
+        </Text>
+
+        <Text style={styles.text}>
+          Blood Group: {record.bloodGroup}
+        </Text>
       </View>
     </SafeAreaView>
   );

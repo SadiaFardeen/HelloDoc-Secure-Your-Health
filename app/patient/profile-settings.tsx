@@ -1,19 +1,21 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 export default function ProfileSettingsScreen() {
   const [name, setName] = useState("Mahmuda");
   const [email, setEmail] = useState("mahmuda@gmail.com");
   const [phone, setPhone] = useState("01711111111");
+  const [age, setAge] = useState("22");
+  const [bloodGroup, setBloodGroup] = useState("A+");
 
   const handleSave = () => {
     Alert.alert("Success", "Profile updated successfully");
@@ -50,6 +52,22 @@ export default function ProfileSettingsScreen() {
           style={styles.input}
           value={phone}
           onChangeText={setPhone}
+        />
+
+        <Text>Age</Text>
+        <TextInput
+          style={styles.input}
+          value={age}
+          onChangeText={setAge}
+          keyboardType="numeric"
+        />
+
+        <Text>Blood Group</Text>
+        <TextInput
+          style={styles.input}
+          value={bloodGroup}
+          onChangeText={setBloodGroup}
+          placeholder="A+, B+, O+, AB+"
         />
 
         <Pressable style={styles.button} onPress={handleSave}>
