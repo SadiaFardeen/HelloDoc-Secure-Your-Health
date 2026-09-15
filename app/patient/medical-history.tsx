@@ -1,18 +1,18 @@
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 import {
-    INITIAL_MEDICAL_HISTORY,
-    MedicalHistory,
+  INITIAL_MEDICAL_HISTORY,
+  MedicalHistory,
 } from "../../data/medicalHistory";
 
 export default function MedicalHistoryScreen() {
@@ -59,6 +59,22 @@ export default function MedicalHistoryScreen() {
               <Text>
                 Visit Date: {record.visitDate}
               </Text>
+
+              <Pressable
+                style={styles.detailsButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/patient/medical-history-details",
+                    params: {
+                      id: record.id.toString(),
+                    },
+                  })
+                }
+              >
+                <Text style={styles.detailsButtonText}>
+                  View Details
+                </Text>
+              </Pressable>
             </View>
           ))
         )}
@@ -110,6 +126,19 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: "700",
     marginBottom: 4,
+  },
+
+  detailsButton: {
+    marginTop: 12,
+    backgroundColor: "#2563eb",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+
+  detailsButtonText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 
   emptyText: {

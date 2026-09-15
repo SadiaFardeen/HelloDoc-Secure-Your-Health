@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import {
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import { INITIAL_MEDICAL_HISTORY } from "../../data/medicalHistory";
@@ -14,7 +14,7 @@ export default function MedicalHistoryDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const record = INITIAL_MEDICAL_HISTORY.find(
-    (item) => item.id === id
+    (item) => String(item.id) === String(id)
   );
 
   if (!record) {
@@ -27,7 +27,9 @@ export default function MedicalHistoryDetailsScreen() {
           <Text style={styles.backText}>← Back</Text>
         </Pressable>
 
-        <Text>Medical record not found.</Text>
+        <Text style={styles.notFound}>
+          Medical record not found.
+        </Text>
       </SafeAreaView>
     );
   }
@@ -41,7 +43,9 @@ export default function MedicalHistoryDetailsScreen() {
         <Text style={styles.backText}>← Back</Text>
       </Pressable>
 
-      <Text style={styles.title}>Medical History Details</Text>
+      <Text style={styles.title}>
+        Medical History Details
+      </Text>
 
       <View style={styles.card}>
         <Text style={styles.label}>
@@ -101,5 +105,11 @@ const styles = StyleSheet.create({
   text: {
     marginBottom: 8,
     fontSize: 16,
+  },
+
+  notFound: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 20,
   },
 });
