@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-const API_URL = "http://192.168.0.120:5000";
+const API_URL = "http://localhost:5000";
 
 export default function ProfileSettingsScreen() {
   const [name, setName] = useState("Mahmuda");

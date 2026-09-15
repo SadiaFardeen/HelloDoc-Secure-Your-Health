@@ -1,10 +1,12 @@
 require("dotenv").config();
 
 const express = require("express");
+const cors = require("cors");
 const pool = require("./db");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -94,6 +96,8 @@ app.put("/users/:id", async (req, res) => {
       bloodGroup,
     } = req.body;
 
+    console.log("UPDATE REQUEST:", req.body);
+
     const result = await pool.query(
       `UPDATE users
        SET name = $1,
@@ -113,9 +117,11 @@ app.put("/users/:id", async (req, res) => {
       ]
     );
 
+    console.log("UPDATED USER:", result.rows);
+
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
+    console.error("UPDATE ERROR:", error);
 
     res.status(500).json({
       error: "Failed to update user profile",
