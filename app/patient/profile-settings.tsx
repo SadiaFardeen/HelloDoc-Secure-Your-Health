@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "http://192.168.0.120:5000";
 
 export default function ProfileSettingsScreen() {
   const [name, setName] = useState("Mahmuda");
@@ -19,8 +19,13 @@ export default function ProfileSettingsScreen() {
   const [age, setAge] = useState("22");
   const [bloodGroup, setBloodGroup] = useState("A+");
 
+  const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
   const handleSave = async () => {
     try {
+      setLoading(true);
+
       const response = await fetch(`${API_URL}/users/1`, {
         method: "PUT",
         headers: {
@@ -43,6 +48,8 @@ export default function ProfileSettingsScreen() {
           "Profile updated successfully"
         );
 
+        setIsEditing(false);
+
         console.log("Updated User:", data);
       } else {
         Alert.alert(
@@ -51,12 +58,14 @@ export default function ProfileSettingsScreen() {
         );
       }
     } catch (error) {
-      console.error("FETCH ERROR:", error);
+      console.log(error);
 
       Alert.alert(
         "Error",
         "Cannot connect to backend server"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,51 +85,85 @@ export default function ProfileSettingsScreen() {
       <View style={styles.form}>
         <Text>Name</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            !isEditing && styles.disabledInput,
+          ]}
           value={name}
           onChangeText={setName}
+          editable={isEditing}
         />
 
         <Text>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            !isEditing && styles.disabledInput,
+          ]}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
+          editable={isEditing}
         />
 
         <Text>Phone</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            !isEditing && styles.disabledInput,
+          ]}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
+          editable={isEditing}
         />
 
         <Text>Age</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            !isEditing && styles.disabledInput,
+          ]}
           value={age}
           onChangeText={setAge}
           keyboardType="numeric"
+          editable={isEditing}
         />
 
         <Text>Blood Group</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            !isEditing && styles.disabledInput,
+          ]}
           value={bloodGroup}
           onChangeText={setBloodGroup}
           placeholder="A+, B+, O+, AB+"
+          editable={isEditing}
         />
 
-        <Pressable
-          style={styles.button}
-          onPress={handleSave}
-        >
-          <Text style={styles.buttonText}>
-            Save Profile
-          </Text>
-        </Pressable>
+        {!isEditing ? (
+          <Pressable
+            style={styles.editButton}
+            onPress={() => setIsEditing(true)}
+          >
+            <Text style={styles.buttonText}>
+              Edit Profile
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={styles.button}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading
+                ? "Saving..."
+                : "Save Profile"}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -160,6 +203,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  disabledInput: {
+    backgroundColor: "#f5f5f5",
+    color: "#666",
+  },
+
+  editButton: {
+    backgroundColor: "#16a34a",
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+
   button: {
     backgroundColor: "#2563eb",
     padding: 14,
@@ -171,5 +226,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     fontWeight: "700",
+    fontSize: 16,
   },
 });
