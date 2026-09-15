@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 
+const API_URL = "http://192.168.0.120:5000";
+
 export default function ProfileSettingsScreen() {
   const [name, setName] = useState("Mahmuda");
   const [email, setEmail] = useState("mahmuda@gmail.com");
@@ -17,8 +19,46 @@ export default function ProfileSettingsScreen() {
   const [age, setAge] = useState("22");
   const [bloodGroup, setBloodGroup] = useState("A+");
 
-  const handleSave = () => {
-    Alert.alert("Success", "Profile updated successfully");
+  const handleSave = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/users/1`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert(
+          "Success",
+          "Profile updated successfully"
+        );
+
+        console.log(data);
+      } else {
+        Alert.alert(
+          "Error",
+          "Failed to update profile"
+        );
+      }
+    } catch (error) {
+      console.error(error);
+
+      Alert.alert(
+        "Error",
+        "Cannot connect to backend server"
+      );
+    }
   };
 
   return (
@@ -30,7 +70,9 @@ export default function ProfileSettingsScreen() {
         <Text style={styles.backText}>← Back</Text>
       </Pressable>
 
-      <Text style={styles.title}>Profile Settings</Text>
+      <Text style={styles.title}>
+        Profile Settings
+      </Text>
 
       <View style={styles.form}>
         <Text>Name</Text>
@@ -70,8 +112,13 @@ export default function ProfileSettingsScreen() {
           placeholder="A+, B+, O+, AB+"
         />
 
-        <Pressable style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Save Profile</Text>
+        <Pressable
+          style={styles.button}
+          onPress={handleSave}
+        >
+          <Text style={styles.buttonText}>
+            Save Profile
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
