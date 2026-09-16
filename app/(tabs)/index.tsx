@@ -39,7 +39,6 @@ export default function PatientDashboardScreen() {
   const [loading, setLoading] = useState(true);
 
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [prescriptionsModalVisible, setPrescriptionsModalVisible] = useState(false);
 
   const [editName, setEditName] = useState(profile.name);
   const [editAge, setEditAge] = useState(profile.age);
@@ -171,12 +170,7 @@ export default function PatientDashboardScreen() {
         <View style={styles.actionGrid}>
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() =>
-              router.push({
-                pathname: "/(tabs)/doctor-discovery",
-                params: { userName: profile.name, userId },
-              })
-            }
+            onPress={() => router.push("/(tabs)/doctor-discovery")}
           >
             <View style={[styles.actionIconBox, { backgroundColor: "#ccfbf1" }]}>
               <Ionicons name="search" size={24} color="#0d9488" />
@@ -185,9 +179,15 @@ export default function PatientDashboardScreen() {
             <Text style={styles.actionCardSubtitle}>Book consultation</Text>
           </TouchableOpacity>
 
+          {/* প্রেসক্রিপশন কার্ডে ক্লিক করলে সরাসরি আপনার নতুন /patient/records পেজে যাবে */}
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => setPrescriptionsModalVisible(true)}
+            onPress={() =>
+              router.push({
+                pathname: "/patient/records",
+                params: { patientName: profile.name },
+              })
+            }
           >
             <View style={[styles.actionIconBox, { backgroundColor: "#e0e7ff" }]}>
               <Ionicons name="document-text" size={24} color="#4f46e5" />
@@ -197,7 +197,6 @@ export default function PatientDashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Real Chat Room Navigation */}
         <TouchableOpacity
           style={styles.chatDoctorBanner}
           onPress={() =>
@@ -233,12 +232,7 @@ export default function PatientDashboardScreen() {
             <Text style={styles.emptySubtitle}>Find a doctor and book your consultation slot.</Text>
             <TouchableOpacity
               style={styles.findDoctorMiniBtn}
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/doctor-discovery",
-                  params: { userName: profile.name, userId },
-                })
-              }
+              onPress={() => router.push("/(tabs)/doctor-discovery")}
             >
               <Text style={styles.findDoctorMiniBtnText}>Book Appointment</Text>
             </TouchableOpacity>
@@ -353,46 +347,6 @@ export default function PatientDashboardScreen() {
           </ScrollView>
         </View>
       </Modal>
-
-      {/* View Prescriptions Modal */}
-      <Modal visible={prescriptionsModalVisible} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: "80%" }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Your Prescriptions</Text>
-              <TouchableOpacity onPress={() => setPrescriptionsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#0f172a" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {prescriptions.length === 0 ? (
-                <View style={{ padding: 30, alignItems: "center" }}>
-                  <Ionicons name="document-text-outline" size={44} color="#94a3b8" />
-                  <Text style={{ marginTop: 10, color: "#64748b" }}>No prescriptions issued yet.</Text>
-                </View>
-              ) : (
-                prescriptions.map((rx) => (
-                  <View key={rx.id} style={styles.rxCard}>
-                    <View style={styles.rxHeader}>
-                      <Text style={styles.rxDoctor}>{rx.doctor_name}</Text>
-                      <Text style={styles.rxDate}>📅 {rx.date}</Text>
-                    </View>
-                    <Text style={styles.rxDiagnosis}>Diagnosis: {rx.diagnosis || "General"}</Text>
-                    <View style={styles.rxBox}>
-                      <Text style={styles.rxMedicinesLabel}>Medicines:</Text>
-                      <Text style={styles.rxMedicinesText}>{rx.medicines}</Text>
-                    </View>
-                    {rx.instructions && (
-                      <Text style={styles.rxInstructions}>Advice: {rx.instructions}</Text>
-                    )}
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -454,13 +408,4 @@ const styles = StyleSheet.create({
   modalInput: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#f8fafc" },
   saveModalBtn: { backgroundColor: "#0d9488", paddingVertical: 12, borderRadius: 10, alignItems: "center", marginTop: 16 },
   saveModalBtnText: { color: "#fff", fontWeight: "bold" },
-  rxCard: { backgroundColor: "#f8fafc", padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 10 },
-  rxHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rxDoctor: { fontSize: 15, fontWeight: "bold", color: "#0f172a" },
-  rxDate: { fontSize: 11, color: "#64748b" },
-  rxDiagnosis: { fontSize: 13, color: "#0d9488", fontWeight: "600", marginTop: 4 },
-  rxBox: { backgroundColor: "#fff", padding: 8, borderRadius: 6, marginVertical: 6, borderWidth: 1, borderColor: "#cbd5e1" },
-  rxMedicinesLabel: { fontSize: 11, fontWeight: "bold", color: "#475569" },
-  rxMedicinesText: { fontSize: 13, color: "#0f172a", marginTop: 2 },
-  rxInstructions: { fontSize: 12, color: "#64748b", fontStyle: "italic" },
 });
