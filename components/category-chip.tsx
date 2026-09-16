@@ -1,68 +1,49 @@
-import {
-    Pressable,
-    StyleSheet,
-    Text,
-} from "react-native";
-
-import {
-    COLORS,
-    RADIUS,
-} from "../constants/theme";
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface CategoryChipProps {
-  title: string;
-  selected: boolean;
+  label: string;
+  selected?: boolean;
   onPress: () => void;
 }
 
-export default function CategoryChip({
-  title,
-  selected,
-  onPress,
-}: CategoryChipProps) {
+export default function CategoryChip({ label, selected, onPress }: CategoryChipProps) {
   return (
-    <Pressable
-      style={[
-        styles.chip,
-        selected && styles.selectedChip,
-      ]}
+    <TouchableOpacity
+      style={[styles.chip, selected && styles.selectedChip]}
       onPress={onPress}
+      activeOpacity={0.8}
     >
-      <Text
-        style={[
-          styles.text,
-          selected && styles.selectedText,
-        ]}
-      >
-        {title}
+      <Text style={[styles.label, selected && styles.selectedLabel]}>
+        {label}
       </Text>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   chip: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.round,
     paddingHorizontal: 16,
-    paddingVertical: 9,
-    marginRight: 8,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 38,
   },
-
   selectedChip: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: '#0d9488',
+    borderColor: '#0d9488',
   },
-
-  text: {
+  label: {
     fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
+    fontWeight: '600',
+    color: '#334155',
   },
-
-  selectedText: {
-    color: "#FFFFFF",
+  selectedLabel: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
 });

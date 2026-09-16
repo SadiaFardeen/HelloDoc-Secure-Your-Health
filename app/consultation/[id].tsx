@@ -3,7 +3,6 @@ import {
   useLocalSearchParams,
 } from "expo-router";
 import { useEffect, useState } from "react";
-
 import {
   StyleSheet,
   Text,
@@ -13,116 +12,88 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomButton from "../../components/custom-button";
 import { COLORS } from "../../constants/theme";
-import { DOCTORS } from "../../data/doctor";
+import { DOCTORS } from "../../data/doctors";
 
 export default function ConsultationScreen() {
   const params = useLocalSearchParams<{
-    id?: string;
-    patientId?: string;
+    id: string;
+    type?: string;
   }>();
+  const [countdown, setCountdown] = useState(15);
+  const [callStatus, setCallStatus] = useState<
+    "connecting" | "connected" | "ended"
+  >("connecting");
 
-  const id = Array.isArray(params.id)
-    ? params.id[0]
-    : params.id;
-
-  const patientId = Array.isArray(params.patientId)
-    ? params.patientId[0]
-    : params.patientId;
-
-  const doctor = DOCTORS.find(
-    (item) => item.id === id
-  );
-
-  const [seconds, setSeconds] = useState(0);
+  const doctor = DOCTORS.find((d) => d.id === params.id) || DOCTORS[0];
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setCallStatus("connected");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (callStatus !== "connected") return;
+
     const interval = setInterval(() => {
-      setSeconds((previousSeconds) => previousSeconds + 1);
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCallStatus("ended");
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [callStatus]);
 
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-
-  const timer =
-    `${String(minutes).padStart(2, "0")}:` +
-    `${String(remainingSeconds).padStart(2, "0")}`;
-
-  if (!doctor) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.notFoundText}>
-          Doctor not found.
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
-  const handleOpenChat = () => {
-    router.push({
-      pathname: "/consultation/chat/[id]",
-      params: {
-        id: `${doctor.id}_${patientId}`,
-        doctorId: doctor.id,
-        patientId: patientId!,
-        currentUserId: `patient:${patientId}`,
-        targetName: doctor.name,
-      },
-    });
-  };
-
-  const handleEndConsultation = () => {
-    router.back();
+  const handleEndCall = () => {
+    router.replace("/(tabs)");
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.statusCard}>
-        <Text style={styles.statusText}>
-          ● Consultation Active
-        </Text>
+      <View style={styles.content}>
+        <View style={styles.avatarContainer}>
+          <Text style={styles.avatarText}>
+            {doctor.name.charAt(0)}
+          </Text>
+        </View>
 
-        <Text style={styles.secureText}>
-          Your consultation is private and secure.
-        </Text>
+        <Text style={styles.doctorName}>{doctor.name}</Text>
+        <Text style={styles.specialty}>{doctor.specialty}</Text>
+
+        <View style={styles.statusContainer}>
+          {callStatus === "connecting" && (
+            <Text style={styles.statusText}>Connecting call...</Text>
+          )}
+          {callStatus === "connected" && (
+            <View style={styles.connectedContainer}>
+              <View style={styles.recordingDot} />
+              <Text style={styles.countdownText}>
+                Session ends in: {Math.floor(countdown / 60)}:
+                {(countdown % 60).toString().padStart(2, "0")}
+              </Text>
+            </View>
+          )}
+          {callStatus === "ended" && (
+            <Text style={styles.endedText}>Consultation Ended</Text>
+          )}
+        </View>
+
+        <View style={styles.controls}>
+          <CustomButton
+            title={callStatus === "ended" ? "Done" : "End Call"}
+            onPress={handleEndCall}
+            variant="danger"
+            style={styles.endButton}
+          />
+        </View>
       </View>
-
-      <Text style={styles.title}>
-        Active Consultation
-      </Text>
-
-      <Text style={styles.name}>
-        {doctor.name}
-      </Text>
-
-      <Text style={styles.specialization}>
-        {doctor.specialization}
-      </Text>
-
-      <View style={styles.timerBox}>
-        <Text style={styles.timerLabel}>
-          Session Time
-        </Text>
-
-        <Text style={styles.timer}>
-          {timer}
-        </Text>
-      </View>
-
-      <CustomButton
-        title="Open Consultation Chat"
-        onPress={handleOpenChat}
-        style={styles.chatButton}
-      />
-
-      <CustomButton
-        title="End Consultation"
-        variant="danger"
-        onPress={handleEndConsultation}
-        style={styles.endButton}
-      />
     </SafeAreaView>
   );
 }
@@ -131,87 +102,72 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 20,
-    justifyContent: "center",
   },
-
-  statusCard: {
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
-    borderRadius: 12,
-    padding: 14,
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  avatarContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
   },
-
-  statusText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.success,
+  avatarText: {
+    fontSize: 48,
+    color: COLORS.white,
+    fontWeight: "bold",
   },
-
-  secureText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 5,
+  doctorName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: COLORS.black,
+    marginBottom: 8,
   },
-
-  title: {
-    fontSize: 25,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    textAlign: "center",
-  },
-
-  name: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.secondary,
-    textAlign: "center",
-    marginTop: 16,
-  },
-
-  specialization: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.primary,
-    textAlign: "center",
-    marginTop: 4,
-  },
-
-  timerBox: {
-    alignItems: "center",
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 12,
-    paddingVertical: 20,
-    marginTop: 24,
-  },
-
-  timerLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primaryDark,
-    textTransform: "uppercase",
-  },
-
-  timer: {
-    fontSize: 42,
-    fontWeight: "800",
-    color: COLORS.primaryDark,
-    marginTop: 7,
-  },
-
-  chatButton: {
-    marginTop: 28,
-  },
-
-  endButton: {
-    marginTop: 10,
-  },
-
-  notFoundText: {
+  specialty: {
     fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: "center",
+    color: COLORS.gray,
+    marginBottom: 32,
+  },
+  statusContainer: {
+    marginBottom: 48,
+    alignItems: "center",
+  },
+  statusText: {
+    fontSize: 16,
+    color: COLORS.gray,
+  },
+  connectedContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.error,
+  },
+  countdownText: {
+    fontSize: 16,
+    color: COLORS.gray,
+    fontWeight: "600",
+  },
+  endedText: {
+    fontSize: 18,
+    color: COLORS.error,
+    fontWeight: "bold",
+  },
+  controls: {
+    width: "100%",
+    maxWidth: 200,
+  },
+  endButton: {
+    width: "100%",
   },
 });
