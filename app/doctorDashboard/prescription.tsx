@@ -1,22 +1,32 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Medicine,
   Prescription,
-  getPrescriptions,
   createPrescription,
+  getPrescriptions,
 } from "../../services/member2.api";
+
+// Cross-platform alert helper that works on Web and Mobile
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === "web") {
+    window.alert(`${title}: ${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
 export default function DoctorPrescriptionScreen() {
   const router = useRouter();
@@ -65,7 +75,7 @@ export default function DoctorPrescriptionScreen() {
 
   const handleRemoveMedicine = (index: number) => {
     if (medicines.length === 1) {
-      Alert.alert("Notice", "Prescription must contain at least one medicine entry.");
+      showAlert("Notice", "Prescription must contain at least one medicine entry.");
       return;
     }
     setMedicines(medicines.filter((_, i) => i !== index));
@@ -82,47 +92,52 @@ export default function DoctorPrescriptionScreen() {
   };
 
   const handleSubmit = async () => {
+    console.log("Issue Prescription button clicked!");
+
     if (!patientName.trim()) {
-      Alert.alert("Validation Error", "Please provide a patient name.");
+      showAlert("Validation Error", "Please enter a patient name.");
       return;
     }
     if (!diagnosis.trim()) {
-      Alert.alert("Validation Error", "Please enter the diagnosis.");
+      showAlert("Validation Error", "Please enter the diagnosis.");
       return;
     }
 
-    const validMedicines = medicines.filter((m) => m.name.trim().length > 0);
+    const validMedicines = medicines.filter((m) => m.name && m.name.trim().length > 0);
     if (validMedicines.length === 0) {
-      Alert.alert(
-        "Validation Error",
-        "Please provide details for at least one medicine."
-      );
+      showAlert("Validation Error", "Please enter at least one medicine name.");
       return;
     }
 
     try {
       setSubmitting(true);
-      const newPrescription = await createPrescription({
+      const payload = {
         appointmentId: initialAppointmentId || undefined,
         patientName: patientName.trim(),
         diagnosis: diagnosis.trim(),
         medicines: validMedicines,
         notes: notes.trim(),
-      });
+      };
 
-      Alert.alert("Success", "Prescription has been created and saved.");
-      setPrescriptions([newPrescription, ...prescriptions]);
+      console.log("Submitting payload:", payload);
 
+      const newPrescription = await createPrescription(payload);
+      console.log("Prescription created successfully:", newPrescription);
+
+      showAlert("Success", "Prescription has been created successfully!");
+      
+      // Update UI list
+      setPrescriptions((prev) => [newPrescription, ...prev]);
+
+      // Reset form
       setPatientName("");
       setDiagnosis("");
       setNotes("");
       setMedicines([{ name: "", dosage: "", timing: "" }]);
     } catch (err: any) {
       console.error("Prescription create error:", err);
-      Alert.alert(
-        "Submission Error",
-        err.response?.data?.error || "Could not save prescription."
-      );
+      const msg = err.response?.data?.error || err.message || "Could not save prescription.";
+      showAlert("Submission Error", msg);
     } finally {
       setSubmitting(false);
     }
@@ -185,7 +200,7 @@ export default function DoctorPrescriptionScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Medicine name"
+              placeholder="Medicine name (e.g. Napa 500mg)"
               value={med.name}
               onChangeText={(text) => handleMedicineChange(index, "name", text)}
             />
@@ -287,7 +302,7 @@ export default function DoctorPrescriptionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16, paddingBottom: 40, maxWidth: 650, alignSelf: "center", width: "100%" },
   headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   backButton: {
     paddingVertical: 6,
@@ -303,7 +318,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   formTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a", marginBottom: 14 },
   label: { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 6, marginTop: 8 },
@@ -345,6 +361,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 18,
+    cursor: "pointer" as any,
   },
   btnDisabled: { opacity: 0.6 },
   submitButtonText: { color: "#ffffff", fontSize: 15, fontWeight: "600" },
@@ -358,7 +375,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   cardHeader: {
     flexDirection: "row",

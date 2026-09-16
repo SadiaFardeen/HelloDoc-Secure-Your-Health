@@ -1,11 +1,7 @@
 // services/member2.api.ts
 import axios from "axios";
-import { Platform } from "react-native";
 
-const DEV_API_URL =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:5000"
-    : "http://localhost:5000";
+const DEV_API_URL = "http://localhost:5000";
 
 export const member2Api = axios.create({
   baseURL: DEV_API_URL,
