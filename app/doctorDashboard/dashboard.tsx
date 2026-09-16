@@ -1,388 +1,540 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  Modal,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "../../constants/theme";
-import { api } from "../../services/api";
+import { useRouter } from "expo-router";
+import {
+  Appointment,
+  getDoctorAppointments,
+  updateAppointmentStatus,
+} from "../../services/member2.api";
 
 export default function DoctorDashboardScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
 
-  const doctorId = (params.doctorId as string) || "1";
-  const [profile, setProfile] = useState<any>({
-    name: (params.doctorName as string) || "Doctor",
-    email: (params.doctorEmail as string) || "doctor@hellodoc.com",
-    specialty: (params.doctorSpecialty as string) || "Specialist",
-    hospital: "City Medical Hospital",
-    fee: "800",
-    image_url: "",
-  });
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "pending" | "accepted" | "rejected"
+  >("all");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [rxModalVisible, setRxModalVisible] = useState(false);
-
-  const [editName, setEditName] = useState(profile.name);
-  const [editHospital, setEditHospital] = useState(profile.hospital);
-  const [editFee, setEditFee] = useState(String(profile.fee));
-  const [editImageUrl, setEditImageUrl] = useState("");
-  const [updating, setUpdating] = useState(false);
-
-  const [rxPatientName, setRxPatientName] = useState("");
-  const [rxDiagnosis, setRxDiagnosis] = useState("");
-  const [rxMedicines, setRxMedicines] = useState("");
-  const [rxInstructions, setRxInstructions] = useState("");
-  const [creatingRx, setCreatingRx] = useState(false);
-
-  const fetchProfileAndData = async () => {
+  const fetchAppointments = useCallback(async () => {
     try {
-      setLoading(true);
-      if (doctorId && api.getUserProfile) {
-        const uProfile = await api.getUserProfile(doctorId);
-        setProfile({
-          name: uProfile.name || profile.name,
-          email: uProfile.email || profile.email,
-          specialty: uProfile.specialty || profile.specialty,
-          hospital: uProfile.hospital || "City Medical Hospital",
-          fee: String(uProfile.fee || "800"),
-          image_url: uProfile.image_url || "",
-        });
-        setEditName(uProfile.name || profile.name);
-        setEditHospital(uProfile.hospital || "City Medical Hospital");
-        setEditFee(String(uProfile.fee || "800"));
-        setEditImageUrl(uProfile.image_url || "");
-      }
-      const data = await api.getAppointments();
-      if (Array.isArray(data)) {
-        setAppointments(data);
-      }
-    } catch (err) {
-      console.error(err);
+      setError(null);
+      const data = await getDoctorAppointments();
+      setAppointments(data);
+    } catch (err: any) {
+      console.error("Dashboard fetch error:", err);
+      setError(
+        err.response?.data?.error ||
+          "Unable to load appointments. Make sure backend server is running."
+      );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchProfileAndData();
-  }, [doctorId]);
+    fetchAppointments();
+  }, [fetchAppointments]);
 
-  const handleUpdateProfile = async () => {
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAppointments();
+  };
+
+  const handleStatusUpdate = async (
+    id: string,
+    newStatus: "accepted" | "rejected"
+  ) => {
     try {
-      setUpdating(true);
-      const res = await api.updateUserProfile(doctorId, {
-        name: editName.trim(),
-        hospital: editHospital.trim(),
-        fee: Number(editFee) || 500,
-        image_url: editImageUrl.trim(),
-      });
-      setProfile(res.user);
-      setEditModalVisible(false);
+      setUpdatingId(id);
+      const updated = await updateAppointmentStatus(id, newStatus);
+      setAppointments((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status: updated.status } : item))
+      );
+      Alert.alert(
+        "Status Updated",
+        `Appointment has been marked as ${newStatus}.`
+      );
     } catch (err: any) {
-      alert(err.message || "Failed to update profile");
+      Alert.alert(
+        "Update Failed",
+        err.response?.data?.error || "Could not update appointment status."
+      );
     } finally {
-      setUpdating(false);
+      setUpdatingId(null);
     }
   };
 
-  const handleCreatePrescription = async () => {
-    if (!rxPatientName.trim() || !rxMedicines.trim()) {
-      alert("Please provide patient name and medicines");
-      return;
-    }
-    try {
-      setCreatingRx(true);
-      await api.createPrescription({
-        doctor_id: doctorId,
-        doctor_name: profile.name,
-        patient_name: rxPatientName.trim(),
-        diagnosis: rxDiagnosis.trim(),
-        medicines: rxMedicines.trim(),
-        instructions: rxInstructions.trim(),
-      });
-      alert("Prescription generated successfully!");
-      setRxPatientName("");
-      setRxDiagnosis("");
-      setRxMedicines("");
-      setRxInstructions("");
-      setRxModalVisible(false);
-    } catch (e: any) {
-      alert(e.message || "Failed to create prescription");
-    } finally {
-      setCreatingRx(false);
-    }
-  };
+  const filteredAppointments = appointments.filter((item) => {
+    if (activeFilter === "all") return true;
+    return item.status?.toLowerCase() === activeFilter;
+  });
+
+  const totalCount = appointments.length;
+  const pendingCount = appointments.filter(
+    (a) => a.status?.toLowerCase() === "pending"
+  ).length;
+  const acceptedCount = appointments.filter(
+    (a) => a.status?.toLowerCase() === "accepted"
+  ).length;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerCard}>
-          <View style={styles.topProfileRow}>
-            {profile.image_url ? (
-              <Image source={{ uri: profile.image_url }} style={styles.avatarImg} />
-            ) : (
-              <View style={styles.avatarMini}>
-                <Ionicons name="medical" size={32} color={COLORS.white} />
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.welcomeText}>Welcome back 👨‍⚕️</Text>
-              <Text style={styles.doctorNameText}>{profile.name}</Text>
-              <Text style={styles.specialtyText}>{profile.specialty}</Text>
-              <Text style={styles.hospitalText}>📍 {profile.hospital || "City Hospital"}</Text>
-              <Text style={styles.feeText}>Fee: ৳{profile.fee || 500}</Text>
-            </View>
-          </View>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.header}>
+        <Text style={styles.title}>Doctor Portal</Text>
+        <Text style={styles.subtitle}>
+          Manage your schedule, appointment requests, and prescriptions
+        </Text>
+      </View>
 
-          <TouchableOpacity
-            style={styles.editProfileBtn}
-            onPress={() => setEditModalVisible(true)}
-          >
-            <Ionicons name="create-outline" size={16} color={COLORS.white} />
-            <Text style={styles.editProfileBtnText}>Edit Profile & Fee</Text>
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.prescriptionNavBtn}
+        onPress={() => router.push("/doctorDashboard/prescription")}
+        accessibilityRole="button"
+        accessibilityLabel="Go to Prescription Management Screen"
+      >
+        <Text style={styles.prescriptionNavText}>
+          📝 Open Prescription Management →
+        </Text>
+      </TouchableOpacity>
+
+      <View style={styles.statsRow}>
+        <View style={[styles.statCard, { borderLeftColor: "#2563eb" }]}>
+          <Text style={styles.statNumber}>{totalCount}</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </View>
-
-        <View style={styles.actionGrid}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => {
-              if (router.canGoBack) {
-                router.push("/doctorDashboard/prescription");
-              } else {
-                setRxModalVisible(true);
-              }
-            }}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: "#ccfbf1" }]}>
-              <Ionicons name="create" size={24} color="#0d9488" />
-            </View>
-            <Text style={styles.actionCardTitle}>Create Prescription</Text>
-            <Text style={styles.actionCardSubtitle}>Write Rx for patient</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/consultation/${doctorId}`)}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: "#e0e7ff" }]}>
-              <Ionicons name="chatbubbles" size={24} color="#4f46e5" />
-            </View>
-            <Text style={styles.actionCardTitle}>Chat with Patient</Text>
-            <Text style={styles.actionCardSubtitle}>Open consultation</Text>
-          </TouchableOpacity>
+        <View style={[styles.statCard, { borderLeftColor: "#f59e0b" }]}>
+          <Text style={styles.statNumber}>{pendingCount}</Text>
+          <Text style={styles.statLabel}>Pending</Text>
         </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{appointments.length}</Text>
-            <Text style={styles.statLabel}>Assigned Patients</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>৳{profile.fee || 500}</Text>
-            <Text style={styles.statLabel}>Visiting Fee</Text>
-          </View>
+        <View style={[styles.statCard, { borderLeftColor: "#10b981" }]}>
+          <Text style={styles.statNumber}>{acceptedCount}</Text>
+          <Text style={styles.statLabel}>Accepted</Text>
         </View>
+      </View>
 
-        <Text style={styles.sectionTitle}>Your Appointments & Patients</Text>
-
-        {loading ? (
-          <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 20 }} />
-        ) : appointments.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={40} color="#94a3b8" />
-            <Text style={styles.emptyTitle}>No patient appointments yet</Text>
-            <Text style={styles.emptySubtitle}>A patient will appear here after booking you.</Text>
-          </View>
-        ) : (
-          appointments.map((apt) => (
-            <View key={apt.id} style={styles.appointmentCard}>
-              <View style={styles.aptTop}>
-                <Ionicons name="person-circle" size={36} color={COLORS.primary} />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.patientName}>{apt.patient_name}</Text>
-                  <Text style={styles.aptMeta}>📅 {apt.date} • ⏰ {apt.time}</Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 6 }}>
-                  <TouchableOpacity
-                    style={styles.chatActionBtn}
-                    onPress={() => router.push(`/consultation/${doctorId}`)}
-                  >
-                    <Ionicons name="chatbubble-ellipses" size={16} color="#fff" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.rxQuickBtn}
-                    onPress={() => {
-                      setRxPatientName(apt.patient_name);
-                      setRxModalVisible(true);
-                    }}
-                  >
-                    <Text style={styles.rxQuickBtnText}>Rx</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ))
-        )}
-
-        <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace("/")}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Edit Doctor Profile Modal */}
-      <Modal visible={editModalVisible} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Doctor Profile</Text>
-              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#0f172a" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Doctor Name</Text>
-            <TextInput style={styles.modalInput} value={editName} onChangeText={setEditName} />
-
-            <Text style={styles.label}>Hospital / Chamber</Text>
-            <TextInput style={styles.modalInput} value={editHospital} onChangeText={setEditHospital} />
-
-            <Text style={styles.label}>Visiting Fee (BDT)</Text>
-            <TextInput style={styles.modalInput} value={editFee} onChangeText={setEditFee} keyboardType="numeric" />
-
-            <Text style={styles.label}>Profile Image URL</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="https://..."
-              value={editImageUrl}
-              onChangeText={setEditImageUrl}
-            />
-
+      <View style={styles.filterSection}>
+        <Text style={styles.sectionHeader}>Appointment Requests</Text>
+        <View style={styles.filterBar}>
+          {(["all", "pending", "accepted", "rejected"] as const).map((tab) => (
             <TouchableOpacity
-              style={[styles.saveModalBtn, updating && { opacity: 0.7 }]}
-              onPress={handleUpdateProfile}
-              disabled={updating}
+              key={tab}
+              style={[
+                styles.filterTab,
+                activeFilter === tab && styles.filterTabActive,
+              ]}
+              onPress={() => setActiveFilter(tab)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeFilter === tab }}
             >
-              <Text style={styles.saveModalBtnText}>{updating ? "Saving..." : "Save Changes"}</Text>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  activeFilter === tab && styles.filterTabTextActive,
+                ]}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Text>
             </TouchableOpacity>
-          </View>
+          ))}
         </View>
-      </Modal>
+      </View>
 
-      {/* Create Prescription Modal */}
-      <Modal visible={rxModalVisible} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Prescription</Text>
-              <TouchableOpacity onPress={() => setRxModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#0f172a" />
-              </TouchableOpacity>
+      {loading && (
+        <View style={styles.centerBox}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.stateText}>Loading appointments...</Text>
+        </View>
+      )}
+
+      {!loading && error && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={fetchAppointments}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading appointments"
+          >
+            <Text style={styles.retryBtnText}>Retry Connection</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!loading && !error && filteredAppointments.length === 0 && (
+        <View style={styles.centerBox}>
+          <Text style={styles.emptyTitle}>No Appointments Found</Text>
+          <Text style={styles.emptySubtitle}>
+            There are no {activeFilter !== "all" ? activeFilter : ""} appointments at this time.
+          </Text>
+        </View>
+      )}
+
+      {!loading &&
+        !error &&
+        filteredAppointments.map((item) => {
+          const isUpdating = updatingId === item.id;
+          const patientName = item.patient_name || item.patientName || "Patient";
+          const status = item.status?.toLowerCase() || "pending";
+
+          return (
+            <View key={item.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.patientName}>{patientName}</Text>
+                  <Text style={styles.dateTime}>
+                    📅 {item.date}  ⏰ {item.time}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.badge,
+                    status === "accepted" && styles.badgeAccepted,
+                    status === "rejected" && styles.badgeRejected,
+                    status === "pending" && styles.badgePending,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      status === "accepted" && styles.badgeTextAccepted,
+                      status === "rejected" && styles.badgeTextRejected,
+                      status === "pending" && styles.badgeTextPending,
+                    ]}
+                  >
+                    {status.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.problemLabel}>Reason for visit:</Text>
+              <Text style={styles.problemText}>{item.problem}</Text>
+
+              {status === "pending" && (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.acceptBtn]}
+                    onPress={() => handleStatusUpdate(item.id, "accepted")}
+                    disabled={isUpdating}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Accept appointment for ${patientName}`}
+                  >
+                    {isUpdating ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.btnTextWhite}>Accept Request</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.rejectBtn]}
+                    onPress={() => handleStatusUpdate(item.id, "rejected")}
+                    disabled={isUpdating}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Reject appointment for ${patientName}`}
+                  >
+                    <Text style={styles.rejectBtnText}>Decline</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {status === "accepted" && (
+                <TouchableOpacity
+                  style={styles.prescribeBtn}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/doctorDashboard/prescription",
+                      params: {
+                        appointmentId: item.id,
+                        patientName: patientName,
+                      },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Create prescription for ${patientName}`}
+                >
+                  <Text style={styles.prescribeBtnText}>
+                    + Write Prescription for Patient
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-
-            <Text style={styles.label}>Patient Name</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. Farhana"
-              value={rxPatientName}
-              onChangeText={setRxPatientName}
-            />
-
-            <Text style={styles.label}>Diagnosis</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. Seasonal flu, Hypertension"
-              value={rxDiagnosis}
-              onChangeText={setRxDiagnosis}
-            />
-
-            <Text style={styles.label}>Medicines & Dosage</Text>
-            <TextInput
-              style={[styles.modalInput, { height: 70, textAlignVertical: "top" }]}
-              placeholder="1. Tab Napa Extra (1+0+1)&#10;2. Cap Seclo 20mg (1+0+1)"
-              multiline
-              value={rxMedicines}
-              onChangeText={setRxMedicines}
-            />
-
-            <Text style={styles.label}>Special Advice / Instructions</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Drink plenty of water and rest"
-              value={rxInstructions}
-              onChangeText={setRxInstructions}
-            />
-
-            <TouchableOpacity
-              style={[styles.saveModalBtn, creatingRx && { opacity: 0.7 }]}
-              onPress={handleCreatePrescription}
-              disabled={creatingRx}
-            >
-              <Text style={styles.saveModalBtnText}>{creatingRx ? "Saving Rx..." : "Submit Prescription"}</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </Modal>
-    </SafeAreaView>
+          );
+        })}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
-  content: { padding: 20, paddingBottom: 40 },
-  headerCard: { backgroundColor: "#0d9488", padding: 20, borderRadius: 20, marginBottom: 16 },
-  topProfileRow: { flexDirection: "row", gap: 14, alignItems: "center" },
-  avatarImg: { width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: "#fff" },
-  avatarMini: { width: 70, height: 70, borderRadius: 35, backgroundColor: "#115e59", justifyContent: "center", alignItems: "center" },
-  welcomeText: { color: "#ccfbf1", fontSize: 13, fontWeight: "600" },
-  doctorNameText: { fontSize: 20, fontWeight: "bold", color: COLORS.white },
-  specialtyText: { fontSize: 13, color: "#e6fffa" },
-  hospitalText: { fontSize: 12, color: "#ccfbf1", marginTop: 2 },
-  feeText: { fontSize: 12, color: "#fef08a", fontWeight: "bold", marginTop: 2 },
-  editProfileBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.2)", paddingVertical: 8, borderRadius: 8, marginTop: 14 },
-  editProfileBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  actionGrid: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  actionCard: { flex: 1, backgroundColor: COLORS.white, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0" },
-  actionIconBox: { width: 44, height: 44, borderRadius: 12, justifyContent: "center", alignItems: "center", marginBottom: 8 },
-  actionCardTitle: { fontSize: 14, fontWeight: "bold", color: "#0f172a" },
-  actionCardSubtitle: { fontSize: 11, color: "#64748b", marginTop: 2 },
-  statsRow: { flexDirection: "row", gap: 14, marginBottom: 20 },
-  statCard: { flex: 1, backgroundColor: COLORS.white, padding: 16, borderRadius: 16, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" },
-  statNumber: { fontSize: 22, fontWeight: "bold", color: "#0f766e", marginBottom: 2 },
-  statLabel: { fontSize: 12, color: "#64748b" },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#0f172a", marginBottom: 12 },
-  emptyCard: { backgroundColor: COLORS.white, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0", alignItems: "center", marginBottom: 20 },
-  emptyTitle: { fontSize: 15, fontWeight: "bold", color: "#1e293b", marginTop: 8 },
-  emptySubtitle: { fontSize: 12, color: "#64748b", textAlign: "center", marginTop: 4 },
-  appointmentCard: { backgroundColor: COLORS.white, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 10 },
-  aptTop: { flexDirection: "row", alignItems: "center" },
-  patientName: { fontSize: 15, fontWeight: "bold", color: "#0f172a" },
-  aptMeta: { fontSize: 12, color: "#64748b", marginTop: 2 },
-  chatActionBtn: { backgroundColor: "#4f46e5", padding: 8, borderRadius: 8, justifyContent: "center", alignItems: "center" },
-  rxQuickBtn: { backgroundColor: "#0d9488", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  rxQuickBtnText: { color: "#fff", fontSize: 12, fontWeight: "bold" },
-  logoutButton: { backgroundColor: "#ef4444", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 10 },
-  logoutButtonText: { color: COLORS.white, fontWeight: "bold", fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: "#fff", padding: 22, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  modalTitle: { fontSize: 18, fontWeight: "bold", color: "#0f172a" },
-  label: { fontSize: 12, color: "#475569", fontWeight: "600", marginBottom: 4, marginTop: 8 },
-  modalInput: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "#f8fafc" },
-  saveModalBtn: { backgroundColor: "#0d9488", paddingVertical: 12, borderRadius: 10, alignItems: "center", marginTop: 16 },
-  saveModalBtnText: { color: "#fff", fontWeight: "bold" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#64748b",
+    marginTop: 4,
+  },
+  prescriptionNavBtn: {
+    backgroundColor: "#e0e7ff",
+    borderWidth: 1,
+    borderColor: "#c7d2fe",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  prescriptionNavText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#3730a3",
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    padding: 12,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#64748b",
+    marginTop: 2,
+  },
+  filterSection: {
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 10,
+  },
+  filterBar: {
+    flexDirection: "row",
+    backgroundColor: "#e2e8f0",
+    borderRadius: 8,
+    padding: 4,
+    gap: 4,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  filterTabActive: {
+    backgroundColor: "#ffffff",
+    elevation: 1,
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#64748b",
+  },
+  filterTabTextActive: {
+    color: "#2563eb",
+    fontWeight: "700",
+  },
+  centerBox: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stateText: {
+    fontSize: 14,
+    color: "#64748b",
+    marginTop: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#334155",
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: "#94a3b8",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  errorBox: {
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    padding: 16,
+    borderRadius: 8,
+    marginVertical: 12,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#b91c1c",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  retryBtn: {
+    backgroundColor: "#b91c1c",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  retryBtnText: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  patientName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  dateTime: {
+    fontSize: 13,
+    color: "#64748b",
+    marginTop: 2,
+  },
+  badge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  badgePending: {
+    backgroundColor: "#fef3c7",
+  },
+  badgeAccepted: {
+    backgroundColor: "#d1fae5",
+  },
+  badgeRejected: {
+    backgroundColor: "#fee2e2",
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  badgeTextPending: {
+    color: "#b45309",
+  },
+  badgeTextAccepted: {
+    color: "#047857",
+  },
+  badgeTextRejected: {
+    color: "#b91c1c",
+  },
+  problemLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748b",
+    marginTop: 4,
+  },
+  problemText: {
+    fontSize: 14,
+    color: "#334155",
+    marginTop: 2,
+    lineHeight: 20,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 14,
+  },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  acceptBtn: {
+    backgroundColor: "#10b981",
+  },
+  rejectBtn: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#ef4444",
+  },
+  btnTextWhite: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  rejectBtnText: {
+    color: "#ef4444",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  prescribeBtn: {
+    marginTop: 12,
+    backgroundColor: "#2563eb",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  prescribeBtnText: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
 });
