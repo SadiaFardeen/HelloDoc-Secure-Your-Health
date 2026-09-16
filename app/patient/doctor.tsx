@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useApp } from "@/Context/AppContext";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";

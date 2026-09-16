@@ -1,325 +1,378 @@
-import { useApp } from "@/Context/AppContext";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  Medicine,
+  Prescription,
+  getPrescriptions,
+  createPrescription,
+} from "../../services/member2.api";
 
-import { Prescription } from "../../data/mockData";
+export default function DoctorPrescriptionScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
 
-interface PrescriptionForm {
-  medicineName: string;
-  dosage: string;
-  instructions: string;
-  notes: string;
-}
+  const initialPatient = (params.patientName as string) || "";
+  const initialAppointmentId = (params.appointmentId as string) || "";
 
-export default function PrescriptionScreen() {
-  const params = useLocalSearchParams<{
-    appointmentId?: string;
-    doctorId?: string;
-    patientId?: string;
-  }>();
-  const {
-    addPrescription,
-    appointments,
-    currentDoctorId,
-    patientAccounts,
-    doctors,
-  } = useApp();
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [loadingList, setLoadingList] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const doctorId = params.doctorId ?? currentDoctorId ?? undefined;
-  const appointment = appointments.find(
-    (item) =>
-      item.id === params.appointmentId &&
-      item.doctorId === doctorId &&
-      item.patientId === params.patientId
-  );
-  const patient = patientAccounts.find(
-    (account) => account.id === appointment?.patientId
-  );
-  const doctor = doctors.find((item) => item.id === doctorId);
+  const [patientName, setPatientName] = useState<string>(initialPatient);
+  const [diagnosis, setDiagnosis] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const [form, setForm] = useState<PrescriptionForm>({
-    medicineName: "",
-    dosage: "",
-    instructions: "",
-    notes: "",
-  });
-  const [feedback, setFeedback] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [medicines, setMedicines] = useState<Medicine[]>([
+    { name: "", dosage: "", timing: "" },
+  ]);
 
-  const isFormValid = useMemo(
-    () =>
-      form.medicineName.trim().length > 0 &&
-      form.dosage.trim().length > 0 &&
-      form.instructions.trim().length > 0 &&
-      form.notes.length <= 500,
-    [form]
-  );
+  const loadPrescriptions = useCallback(async () => {
+    try {
+      const data = await getPrescriptions();
+      setPrescriptions(data);
+    } catch (err: any) {
+      console.error("Failed to load prescriptions:", err);
+    } finally {
+      setLoadingList(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  const updateField = (field: keyof PrescriptionForm, value: string) => {
-    setForm((previous) => ({ ...previous, [field]: value }));
-    setFeedback("");
+  useEffect(() => {
+    loadPrescriptions();
+  }, [loadPrescriptions]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadPrescriptions();
   };
 
-  const handleSave = async () => {
-    setFeedback("");
+  const handleAddMedicine = () => {
+    setMedicines([...medicines, { name: "", dosage: "", timing: "" }]);
+  };
 
-    if (!appointment || !patient || !doctor) {
-      setFeedback(
-        "This prescription is not linked to a valid doctor-patient appointment."
+  const handleRemoveMedicine = (index: number) => {
+    if (medicines.length === 1) {
+      Alert.alert("Notice", "Prescription must contain at least one medicine entry.");
+      return;
+    }
+    setMedicines(medicines.filter((_, i) => i !== index));
+  };
+
+  const handleMedicineChange = (
+    index: number,
+    field: keyof Medicine,
+    value: string
+  ) => {
+    const updated = [...medicines];
+    updated[index][field] = value;
+    setMedicines(updated);
+  };
+
+  const handleSubmit = async () => {
+    if (!patientName.trim()) {
+      Alert.alert("Validation Error", "Please provide a patient name.");
+      return;
+    }
+    if (!diagnosis.trim()) {
+      Alert.alert("Validation Error", "Please enter the diagnosis.");
+      return;
+    }
+
+    const validMedicines = medicines.filter((m) => m.name.trim().length > 0);
+    if (validMedicines.length === 0) {
+      Alert.alert(
+        "Validation Error",
+        "Please provide details for at least one medicine."
       );
       return;
     }
 
-    if (!isFormValid) {
-      setFeedback("Medicine, dosage and instructions are required.");
-      return;
-    }
-
-    // This is the exact account email that the patient uses to log in.
-    const patientEmail = patient.email.toLowerCase();
-
-    const newPrescription: Prescription = {
-      id: `prescription-${Date.now()}`,
-      appointmentId: appointment.id,
-      patientId: patient.id,
-      patientName: patient.name,
-      patientEmail,
-      doctorId: doctor.id,
-      doctorName: doctor.name,
-      medicines: [`${form.medicineName.trim()} — ${form.dosage.trim()}`],
-      notes: `${form.instructions.trim()}\n\nAdditional notes: ${
-        form.notes.trim() || "None"
-      }`,
-      createdAt: new Date().toISOString(),
-    };
-
     try {
-      setIsSubmitting(true);
-      await addPrescription(newPrescription);
-
-      // Navigate directly instead of waiting for an Alert callback on web.
-      router.replace({
-        pathname: "/doctorDashboard/dashboard",
-        params: {
-          doctorId: doctor.id,
-          prescriptionStatus: "success",
-          assignedPatient: patient.name,
-        },
+      setSubmitting(true);
+      const newPrescription = await createPrescription({
+        appointmentId: initialAppointmentId || undefined,
+        patientName: patientName.trim(),
+        diagnosis: diagnosis.trim(),
+        medicines: validMedicines,
+        notes: notes.trim(),
       });
-    } catch (error) {
-      console.error("Failed to save prescription:", error);
-      setFeedback("Could not assign the prescription. Please try again.");
+
+      Alert.alert("Success", "Prescription has been created and saved.");
+      setPrescriptions([newPrescription, ...prescriptions]);
+
+      setPatientName("");
+      setDiagnosis("");
+      setNotes("");
+      setMedicines([{ name: "", dosage: "", timing: "" }]);
+    } catch (err: any) {
+      console.error("Prescription create error:", err);
+      Alert.alert(
+        "Submission Error",
+        err.response?.data?.error || "Could not save prescription."
+      );
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  if (!appointment || !patient || !doctor) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.title}>No patient appointment selected</Text>
-          <Text style={styles.errorText}>
-            Open this screen from a patient card on the doctor dashboard.
-          </Text>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.headerRow}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Text style={styles.backButtonText}>← Dashboard</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Prescriptions</Text>
+      </View>
 
-        <Text style={styles.title}>Create Prescription</Text>
+      <View style={styles.card}>
+        <Text style={styles.formTitle}>New Prescription</Text>
 
-        <View style={styles.assignmentCard}>
-          <Text style={styles.assignmentLabel}>Assigned Patient</Text>
-          <Text style={styles.assignmentName}>{patient.name}</Text>
-          <Text style={styles.assignmentText}>{patient.email}</Text>
-          <Text style={styles.assignmentText}>
-            Appointment: {appointment.date} at {appointment.time}
-          </Text>
-          <Text style={styles.assignmentText}>Doctor: {doctor.name}</Text>
+        <Text style={styles.label}>Patient Name *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Tanvir Ahmed"
+          value={patientName}
+          onChangeText={setPatientName}
+        />
+
+        <Text style={styles.label}>Diagnosis *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Acute Bronchitis"
+          value={diagnosis}
+          onChangeText={setDiagnosis}
+        />
+
+        <View style={styles.medicineSectionHeader}>
+          <Text style={styles.label}>Medications *</Text>
+          <TouchableOpacity style={styles.addMedBtn} onPress={handleAddMedicine}>
+            <Text style={styles.addMedBtnText}>+ Add Medicine</Text>
+          </TouchableOpacity>
         </View>
 
-        <Text style={styles.infoText}>
-          This prescription will be visible only when {patient.email} logs in.
-        </Text>
+        {medicines.map((med, index) => (
+          <View key={index} style={styles.medRowBox}>
+            <View style={styles.medRowHeader}>
+              <Text style={styles.medIndexText}>Medicine #{index + 1}</Text>
+              {medicines.length > 1 && (
+                <TouchableOpacity onPress={() => handleRemoveMedicine(index)}>
+                  <Text style={styles.removeText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
-        <Text style={styles.label}>Medicine Name *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter medicine name"
-          placeholderTextColor="#94A3B8"
-          value={form.medicineName}
-          onChangeText={(value: string) => updateField("medicineName", value)}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Medicine name"
+              value={med.name}
+              onChangeText={(text) => handleMedicineChange(index, "name", text)}
+            />
 
-        <Text style={styles.label}>Dosage *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Example: 1+0+1 for 5 days"
-          placeholderTextColor="#94A3B8"
-          value={form.dosage}
-          onChangeText={(value: string) => updateField("dosage", value)}
-        />
+            <View style={styles.inputTwoCol}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Dosage (e.g. 1 Tablet)"
+                value={med.dosage}
+                onChangeText={(text) => handleMedicineChange(index, "dosage", text)}
+              />
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Timing (e.g. After meal)"
+                value={med.timing}
+                onChangeText={(text) => handleMedicineChange(index, "timing", text)}
+              />
+            </View>
+          </View>
+        ))}
 
-        <Text style={styles.label}>Instructions *</Text>
+        <Text style={styles.label}>Doctor Instructions & Advice</Text>
         <TextInput
           style={[styles.input, styles.multilineInput]}
-          placeholder="Example: Take after meals"
-          placeholderTextColor="#94A3B8"
-          value={form.instructions}
-          onChangeText={(value: string) => updateField("instructions", value)}
+          placeholder="e.g. Drink warm water, rest 3 days."
+          value={notes}
+          onChangeText={setNotes}
           multiline
-          textAlignVertical="top"
+          numberOfLines={3}
         />
 
-        <Text style={styles.label}>Additional Notes</Text>
-        <TextInput
-          style={[styles.input, styles.notesInput]}
-          placeholder="Optional notes"
-          placeholderTextColor="#94A3B8"
-          value={form.notes}
-          onChangeText={(value: string) => updateField("notes", value.slice(0, 500))}
-          multiline
-          maxLength={500}
-          textAlignVertical="top"
-        />
-        <Text style={styles.counter}>{form.notes.length}/500</Text>
-
-        {feedback ? (
-          <View style={styles.feedbackBox}>
-            <Text style={styles.feedbackText}>{feedback}</Text>
-          </View>
-        ) : null}
-
-        <Pressable
-          style={[styles.saveButton, isSubmitting && styles.disabledButton]}
-          onPress={() => void handleSave()}
-          disabled={isSubmitting}
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.btnDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
         >
-          <Text style={styles.saveButtonText}>
-            {isSubmitting ? "Assigning..." : "Assign Prescription"}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+          {submitting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.submitButtonText}>Issue Prescription</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.sectionHeader}>Issued Prescriptions</Text>
+
+      {loadingList ? (
+        <View style={styles.centerBox}>
+          <ActivityIndicator size="small" color="#2563eb" />
+          <Text style={styles.stateText}>Loading prescription records...</Text>
+        </View>
+      ) : prescriptions.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyText}>No prescriptions issued yet.</Text>
+        </View>
+      ) : (
+        prescriptions.map((p) => (
+          <View key={p.id} style={styles.historyCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.patientName}>{p.patient_name || p.patientName}</Text>
+              <Text style={styles.dateText}>📅 {p.date}</Text>
+            </View>
+
+            <Text style={styles.diagnosisText}>
+              <Text style={styles.bold}>Diagnosis: </Text>
+              {p.diagnosis}
+            </Text>
+
+            <View style={styles.medChipsContainer}>
+              {(Array.isArray(p.medicines)
+                ? p.medicines
+                : typeof p.medicines === "string"
+                ? JSON.parse(p.medicines)
+                : []
+              ).map((m: Medicine, idx: number) => (
+                <View key={idx} style={styles.medChip}>
+                  <Text style={styles.medChipName}>{m.name}</Text>
+                  {(m.dosage || m.timing) && (
+                    <Text style={styles.medChipDetails}>
+                      {m.dosage} • {m.timing}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
+
+            {p.notes ? (
+              <Text style={styles.notesText}>
+                <Text style={styles.bold}>Notes: </Text>
+                {p.notes}
+              </Text>
+            ) : null}
+          </View>
+        ))
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
-  container: { padding: 20, paddingBottom: 50 },
-  errorContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  errorText: {
-    color: "#64748B",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 20,
-  },
+  container: { flex: 1, backgroundColor: "#f8fafc" },
+  content: { padding: 16, paddingBottom: 40 },
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   backButton: {
-    alignSelf: "flex-start",
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    backgroundColor: "#e2e8f0",
     borderRadius: 8,
-    backgroundColor: "#E2E8F0",
+    marginRight: 12,
   },
-  backButtonText: { fontSize: 16, fontWeight: "600", color: "#0F172A" },
-  title: { fontSize: 28, fontWeight: "bold", color: "#0F172A", marginBottom: 20 },
-  assignmentCard: {
-    backgroundColor: "#ECFDF5",
-    borderWidth: 1,
-    borderColor: "#A7F3D0",
+  backButtonText: { fontSize: 13, fontWeight: "600", color: "#334155" },
+  title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
+  card: {
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 24,
+    elevation: 2,
   },
-  assignmentLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#047857",
-    textTransform: "uppercase",
-  },
-  assignmentName: {
-    fontSize: 19,
-    fontWeight: "800",
-    color: "#065F46",
-    marginTop: 6,
-  },
-  assignmentText: { fontSize: 13, color: "#047857", marginTop: 4 },
-  infoText: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    color: "#1D4ED8",
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
-    marginBottom: 7,
-    marginTop: 12,
-  },
+  formTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a", marginBottom: 14 },
+  label: { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 6, marginTop: 8 },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 14,
-    color: "#0F172A",
+    color: "#0f172a",
   },
-  multilineInput: { minHeight: 90 },
-  notesInput: { minHeight: 110 },
-  counter: { textAlign: "right", fontSize: 12, color: "#64748B", marginTop: 5 },
-  feedbackBox: {
-    backgroundColor: "#FEF2F2",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 14,
-  },
-  feedbackText: { color: "#B91C1C", fontSize: 13, lineHeight: 19 },
-  saveButton: {
-    backgroundColor: "#0D9488",
-    paddingVertical: 15,
-    borderRadius: 10,
+  multilineInput: { minHeight: 70, textAlignVertical: "top" },
+  medicineSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 25,
+    marginTop: 8,
+    marginBottom: 6,
   },
-  disabledButton: { opacity: 0.65 },
-  saveButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  addMedBtn: {
+    backgroundColor: "#eff6ff",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+  },
+  addMedBtnText: { fontSize: 12, fontWeight: "600", color: "#2563eb" },
+  medRowBox: { backgroundColor: "#f1f5f9", borderRadius: 8, padding: 10, marginBottom: 10 },
+  medRowHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  medIndexText: { fontSize: 12, fontWeight: "700", color: "#64748b" },
+  removeText: { fontSize: 12, fontWeight: "600", color: "#ef4444" },
+  inputTwoCol: { flexDirection: "row", gap: 8, marginTop: 8 },
+  submitButton: {
+    backgroundColor: "#2563eb",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 18,
+  },
+  btnDisabled: { opacity: 0.6 },
+  submitButtonText: { color: "#ffffff", fontSize: 15, fontWeight: "600" },
+  sectionHeader: { fontSize: 18, fontWeight: "700", color: "#0f172a", marginBottom: 12 },
+  centerBox: { padding: 24, alignItems: "center" },
+  stateText: { fontSize: 13, color: "#64748b", marginTop: 8 },
+  emptyBox: { padding: 24, backgroundColor: "#ffffff", borderRadius: 12, alignItems: "center" },
+  emptyText: { color: "#94a3b8", fontSize: 14 },
+  historyCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    elevation: 1,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  patientName: { fontSize: 15, fontWeight: "700", color: "#0f172a" },
+  dateText: { fontSize: 12, color: "#64748b" },
+  diagnosisText: { fontSize: 13, color: "#334155", marginBottom: 8 },
+  bold: { fontWeight: "700" },
+  medChipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 },
+  medChip: { backgroundColor: "#e0e7ff", borderRadius: 6, paddingVertical: 4, paddingHorizontal: 8 },
+  medChipName: { fontSize: 12, fontWeight: "600", color: "#3730a3" },
+  medChipDetails: { fontSize: 11, color: "#4338ca" },
+  notesText: { fontSize: 12, color: "#64748b", fontStyle: "italic" },
 });
