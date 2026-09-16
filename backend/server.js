@@ -1,136 +1,102 @@
-require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
+
 const pool = require("./db");
 
-const app = express();
+// Member 2 Routes (Added Line)
+const member2Routes = require("./routes/member2.routes");
 
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Member 2 API Mount (Added Line)
+app.use("/", member2Routes);
+
+// Test Route
 app.get("/", (req, res) => {
-  res.send("HelloDoc Backend Running");
+  res.json({ message: "HelloDoc API Server is Running!" });
 });
 
-// Database Test API
-app.get("/test-db", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    res.json(result.rows);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      error: "Database connection failed",
-    });
-  }
-});
-
-// Get All Medical History
+// Member 3 - GET /medical-history
 app.get("/medical-history", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM medical_history ORDER BY id"
+      "SELECT * FROM medical_records ORDER BY date DESC"
     );
-
     res.json(result.rows);
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error: "Failed to fetch medical history",
-    });
+  } catch (err) {
+    console.error("Error fetching medical records:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// Get Single Medical History
+// Member 3 - GET /medical-history/:id
 app.get("/medical-history/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
     const result = await pool.query(
-      "SELECT * FROM medical_history WHERE id = $1",
+      "SELECT * FROM medical_records WHERE id = $1",
       [id]
     );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error: "Failed to fetch medical history record",
-    });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching record:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// Get User Profile
+// Member 3 - GET /users/:id
 app.get("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
-    const result = await pool.query(
-      "SELECT * FROM users WHERE id = $1",
-      [id]
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error: "Failed to fetch user profile",
-    });
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-// Update User Profile
+// Member 3 - PUT /users/:id
 app.put("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
-    const {
-      name,
-      email,
-      phone,
-      age,
-      bloodGroup,
-    } = req.body;
-
-    console.log("UPDATE REQUEST:", req.body);
-
+    const { name, email, phone, blood_group, address, emergency_contact } =
+      req.body;
     const result = await pool.query(
       `UPDATE users
-       SET name = $1,
-           email = $2,
-           phone = $3,
-           age = $4,
-           blood_group = $5
-       WHERE id = $6
+       SET name = COALESCE($1, name),
+           email = COALESCE($2, email),
+           phone = COALESCE($3, phone),
+           blood_group = COALESCE($4, blood_group),
+           address = COALESCE($5, address),
+           emergency_contact = COALESCE($6, emergency_contact)
+       WHERE id = $7
        RETURNING *`,
-      [
-        name,
-        email,
-        phone,
-        age,
-        bloodGroup,
-        id,
-      ]
+      [name, email, phone, blood_group, address, emergency_contact, id]
     );
-
-    console.log("UPDATED USER:", result.rows);
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error("UPDATE ERROR:", error);
-
-    res.status(500).json({
-      error: "Failed to update user profile",
-    });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error updating user:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-const PORT = 5000;
-
+// Start Server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
