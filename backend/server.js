@@ -299,7 +299,54 @@ app.post("/prescriptions", async (req, res) => {
 });
 
 // ================= AUTH, DOCTORS & MESSAGES =================
+// 1. GET /prescriptions/:id (Fulfills GET /:id requirement)
+app.get("/prescriptions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query("SELECT * FROM prescriptions WHERE id = $1", [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Prescription not found." });
+    }
 
+    const prescription = rows[0];
+    if (typeof prescription.medicines === "string") {
+      try {
+        prescription.medicines = JSON.parse(prescription.medicines);
+      } catch (e) {
+        prescription.medicines = [];
+      }
+    }
+
+    res.json(prescription);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch prescription details." });
+  }
+});
+
+// 2. DELETE /prescriptions/:id (Fulfills DELETE requirement)
+// DELETE a prescription by ID
+app.delete("/prescriptions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Attempting to delete prescription with ID:", id);
+
+    const result = await pool.query(
+      "DELETE FROM prescriptions WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Prescription not found to delete." });
+    }
+
+    console.log("Deleted prescription:", result.rows[0].id);
+    res.json({ message: "Prescription deleted successfully.", deleted: result.rows[0] });
+  } catch (err) {
+    console.error("Database error during delete:", err);
+    res.status(500).json({ error: "Failed to delete prescription." });
+  }
+});
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, password, role, specialty, license, hospital, fee, image_url, age, gender, blood_group, height, weight } = req.body;

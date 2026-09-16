@@ -43,6 +43,7 @@ export default function DoctorPrescriptionScreen() {
   const [diagnosis, setDiagnosis] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [medicines, setMedicines] = useState<Medicine[]>([
     { name: "", dosage: "", timing: "" },
@@ -92,8 +93,6 @@ export default function DoctorPrescriptionScreen() {
   };
 
   const handleSubmit = async () => {
-    console.log("Issue Prescription button clicked!");
-
     if (!patientName.trim()) {
       showAlert("Validation Error", "Please enter a patient name.");
       return;
@@ -119,14 +118,9 @@ export default function DoctorPrescriptionScreen() {
         notes: notes.trim(),
       };
 
-      console.log("Submitting payload:", payload);
-
       const newPrescription = await createPrescription(payload);
-      console.log("Prescription created successfully:", newPrescription);
-
       showAlert("Success", "Prescription has been created successfully!");
-      
-      // Update UI list
+
       setPrescriptions((prev) => [newPrescription, ...prev]);
 
       // Reset form
@@ -140,6 +134,27 @@ export default function DoctorPrescriptionScreen() {
       showAlert("Submission Error", msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      setDeletingId(id);
+      const response = await fetch(`http://localhost:5000/prescriptions/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete from server");
+      }
+
+      setPrescriptions((prev) => prev.filter((p) => p.id !== id));
+      showAlert("Success", "Prescription deleted successfully.");
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      showAlert("Error", "Could not delete the prescription.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -293,6 +308,21 @@ export default function DoctorPrescriptionScreen() {
                 {p.notes}
               </Text>
             ) : null}
+
+            {/* Action Row with Delete */}
+            <View style={styles.cardActionRow}>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDelete(p.id)}
+                disabled={deletingId === p.id}
+              >
+                {deletingId === p.id ? (
+                  <ActivityIndicator size="small" color="#ef4444" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>🗑 Delete Prescription</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
@@ -393,4 +423,22 @@ const styles = StyleSheet.create({
   medChipName: { fontSize: 12, fontWeight: "600", color: "#3730a3" },
   medChipDetails: { fontSize: 11, color: "#4338ca" },
   notesText: { fontSize: 12, color: "#64748b", fontStyle: "italic" },
+  cardActionRow: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+    alignItems: "flex-end",
+  },
+  deleteButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: "#fef2f2",
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#ef4444",
+  },
 });
