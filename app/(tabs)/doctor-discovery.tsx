@@ -1,325 +1,327 @@
-import { router } from "expo-router";
-import { useState } from "react";
-
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  FlatList,
+  ActivityIndicator,
+  ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import CategoryChip from "../../components/category-chip";
 import DoctorCard from "../../components/doctor-card";
 import SearchBar from "../../components/search-bar";
+import { api } from "../../services/api";
 
-import { COLORS } from "../../constants/theme";
+const SPECIALIZATIONS = [
+  "All",
+  "Cardiologist",
+  "Dermatologist",
+  "Pediatrician",
+  "Neurologist",
+  "Orthopedic",
+  "General Physician",
+];
 
-import {
-  Doctor,
-  DOCTOR_CATEGORIES,
-  DOCTORS,
-} from "../../data/doctor";
+export default function DoctorDiscoveryScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const userName = (params.userName as string) || "Patient";
 
-export default function HomeScreen() {
-  const [searchText, setSearchText] =
-    useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+  const [allDoctors, setAllDoctors] = useState<any[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [
-    selectedCategory,
-    setSelectedCategory,
-  ] = useState("All");
-
-  const filteredDoctors = DOCTORS.filter(
-    (doctor) => {
-      const query = searchText
-        .trim()
-        .toLowerCase();
-
-      const matchesSearch =
-        doctor.name
-          .toLowerCase()
-          .includes(query) ||
-        doctor.specialization
-          .toLowerCase()
-          .includes(query) ||
-        doctor.hospital
-          .toLowerCase()
-          .includes(query);
-
-      const matchesCategory =
-        selectedCategory === "All" ||
-        doctor.specialization ===
-          selectedCategory;
-
-      return matchesSearch && matchesCategory;
+  const fetchDoctorData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await api.getDoctors();
+      if (Array.isArray(data)) {
+        setAllDoctors(data);
+        filterList(data, searchQuery, selectedSpecialty);
+      } else {
+        setAllDoctors([]);
+        setFilteredDoctors([]);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to load doctors");
+    } finally {
+      setLoading(false);
     }
-  );
-
-  const handleDoctorPress = (
-    doctor: Doctor
-  ) => {
-    router.push({
-      pathname: "/doctor/[id]",
-      params: {
-        id: doctor.id,
-      },
-    });
   };
 
+  const filterList = (docs: any[], query: string, specialty: string) => {
+    let result = docs;
+
+    if (specialty && specialty !== "All") {
+      result = result.filter((d) => {
+        const spec = (d.specialization || d.specialty || "").toLowerCase();
+        return spec.includes(specialty.toLowerCase());
+      });
+    }
+
+    if (query.trim()) {
+      const q = query.toLowerCase().trim();
+      result = result.filter((d) => {
+        const name = (d.name || "").toLowerCase();
+        const spec = (d.specialization || d.specialty || "").toLowerCase();
+        const hosp = (d.hospital || "").toLowerCase();
+        const loc = (d.location || "").toLowerCase();
+        return name.includes(q) || spec.includes(q) || hosp.includes(q) || loc.includes(q);
+      });
+    }
+
+    setFilteredDoctors(result);
+  };
+
+  useEffect(() => {
+    fetchDoctorData();
+  }, []);
+
+  useEffect(() => {
+    filterList(allDoctors, searchQuery, selectedSpecialty);
+  }, [searchQuery, selectedSpecialty, allDoctors]);
+
   return (
-    <SafeAreaView style={styles.screen}>
-      {/* Header */}
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-     <Text
-        style={styles.backText}
-        onPress={() => router.replace("/(tabs)")}
-    >
-     ‹ Back to Dashboard
-    </Text>
-  <View style={styles.headerTopRow}>
-    <View>
-      <Text style={styles.brandName}>
-        HelloDoc
-      </Text>
+        <View>
+          <Text style={styles.welcomeGreeting}>Welcome back,</Text>
+          <Text style={styles.headerTitle}>{userName}</Text>
+          <Text style={styles.headerSubtitle}>Book an appointment with specialists</Text>
+        </View>
+        <TouchableOpacity style={styles.filterBtn} onPress={fetchDoctorData}>
+          <Ionicons name="refresh-outline" size={22} color="#0d9488" />
+        </TouchableOpacity>
+      </View>
 
-      <Text style={styles.tagline}>
-        We secure your health
-      </Text>
-    </View>
-
-    <View style={styles.profileCircle}>
-      <Text style={styles.profileText}>
-        P
-      </Text>
-    </View>
-  </View>
-
-  <Text style={styles.welcomeText}>
-    Find the right doctor
-  </Text>
-
-  <Text style={styles.welcomeSubtext}>
-    Search trusted specialists and start a secure
-    consultation.
-  </Text>
-</View>
-
-      {/* Search Bar */}
-
-      <SearchBar
-        value={searchText}
-        onChangeText={setSearchText}
-        placeholder="Search name, speciality or hospital"
-      />
-
-      {/* Category Filter */}
-
-      <View style={styles.categorySection}>
-        <FlatList
-          data={DOCTOR_CATEGORIES}
-          keyExtractor={(item) => item}
-          horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.categoryList
-          }
-          renderItem={({ item }) => (
-            <CategoryChip
-              title={item}
-              selected={
-                selectedCategory === item
-              }
-              onPress={() =>
-                setSelectedCategory(item)
-              }
-            />
-          )}
+      <View style={styles.searchSection}>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search doctor, specialty, location..."
         />
+        <TouchableOpacity style={styles.searchActionBtn} onPress={() => filterList(allDoctors, searchQuery, selectedSpecialty)}>
+          <Ionicons name="search" size={20} color="#ffffff" />
+        </TouchableOpacity>
       </View>
 
-      {/* Result Count */}
+      <View style={styles.categoriesSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesList}
+        >
+          {SPECIALIZATIONS.map((spec) => (
+            <CategoryChip
+              key={spec}
+              label={spec}
+              selected={selectedSpecialty === spec}
+              onPress={() => setSelectedSpecialty(spec)}
+            />
+          ))}
+        </ScrollView>
+      </View>
 
-      <View style={styles.resultHeader}>
-        <Text style={styles.resultText}>
-          {filteredDoctors.length} doctors
-          found
-        </Text>
-
-        {selectedCategory !== "All" ? (
-          <Text style={styles.categoryName}>
-            {selectedCategory}
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#0d9488" />
+        </View>
+      ) : error ? (
+        <View style={styles.centerContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchDoctorData}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.doctorList}
+          contentContainerStyle={styles.doctorListContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.resultsCount}>
+            {filteredDoctors.length} doctor{filteredDoctors.length !== 1 ? "s" : ""} available
           </Text>
-        ) : null}
-      </View>
 
-      {/* Doctor List */}
-
-      <FlatList
-        data={filteredDoctors}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <DoctorCard
-            doctor={item}
-            onPress={handleDoctorPress}
-          />
-        )}
-        contentContainerStyle={
-          styles.doctorList
-        }
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>
-              No doctors found
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Try another name,
-              specialization or category.
-            </Text>
-          </View>
-        }
-      />
+          {filteredDoctors.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={48} color="#94a3b8" />
+              <Text style={styles.emptyTitle}>No doctors found</Text>
+              <Text style={styles.emptySubtitle}>
+                No specialist available under "{selectedSpecialty}". Try selecting "All".
+              </Text>
+              <TouchableOpacity
+                style={styles.resetBtn}
+                onPress={() => {
+                  setSelectedSpecialty("All");
+                  setSearchQuery("");
+                }}
+              >
+                <Text style={styles.resetBtnText}>View All Doctors</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            filteredDoctors.map((doctor: any) => (
+              <DoctorCard
+                key={doctor.id?.toString() || Math.random().toString()}
+                doctor={doctor}
+                id={doctor.id}
+                name={doctor.name}
+                specialty={doctor.specialization || doctor.specialty}
+                rating={Number(doctor.rating) || 4.9}
+                hospital={`${doctor.hospital || "Medical Center"}, ${doctor.location || "Dhaka"}`}
+                fee={`৳${doctor.fee || "500"}`}
+                imageUrl={doctor.image_url}
+                onPress={() =>
+                  router.push({
+                    pathname: `/doctor/${doctor.id}`,
+                    params: { currentPatientName: userName },
+                  })
+                }
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-backText: {
-  fontSize: 14,
-  fontWeight: "600",
-  color: "#CCFBF1",
-  marginBottom: 14,
-},
-  headerTopRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-},
-
-brandName: {
-  fontSize: 22,
-  fontWeight: "900",
-  color: "#FFFFFF",
-},
-
-tagline: {
-  fontSize: 11,
-  color: "#99F6E4",
-  marginTop: 2,
-},
-
-profileCircle: {
-  width: 42,
-  height: 42,
-  borderRadius: 21,
-  backgroundColor: COLORS.primary,
-  alignItems: "center",
-  justifyContent: "center",
-},
-
-profileText: {
-  color: "#FFFFFF",
-  fontWeight: "800",
-},
-
-welcomeText: {
-  fontSize: 26,
-  fontWeight: "900",
-  color: "#FFFFFF",
-  marginTop: 28,
-},
-
-welcomeSubtext: {
-  fontSize: 13,
-  color: "#D9F9F4",
-  marginTop: 7,
-},
-
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#f8fafc',
   },
-
   header: {
-  backgroundColor: COLORS.secondary,
-  paddingHorizontal: 20,
-  paddingTop: 20,
-  paddingBottom: 26,
-  borderBottomLeftRadius: 28,
-  borderBottomRightRadius: 28,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#FFFFFF",
-  },
-
-  subtitle: {
+  welcomeGreeting: {
     fontSize: 13,
-    color: "#CCFBF1",
-    marginTop: 4,
+    color: "#0d9488",
+    fontWeight: "600",
   },
-
-  categorySection: {
-    backgroundColor: COLORS.surface,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: '#0f172a',
   },
-
-  categoryList: {
-    paddingHorizontal: 16,
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
   },
-
-  resultHeader: {
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  searchSection: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginTop: 12,
+    gap: 10,
   },
-
-  resultText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
+  searchActionBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#0d9488',
+    justifyContent: "center",
+    alignItems: "center",
   },
-
-  categoryName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
+  categoriesSection: {
+    marginTop: 14,
+    height: 44,
   },
-
+  categoriesList: {
+    paddingHorizontal: 20,
+    gap: 8,
+    alignItems: 'center',
+  },
   doctorList: {
-    flexGrow: 1,
-    paddingBottom: 30,
+    flex: 1,
+    marginTop: 8,
   },
-
-  emptyBox: {
+  doctorListContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  resultsCount: {
+    fontSize: 13,
+    color: '#64748b',
+    marginVertical: 10,
+    fontWeight: '500',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginTop: 8,
+    textAlign: "center",
+  },
+  retryBtn: {
+    marginTop: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    backgroundColor: '#0d9488',
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    color: '#ffffff',
+    fontWeight: "600",
+  },
+  emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 30,
-    paddingVertical: 80,
+    paddingVertical: 50,
   },
-
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: '#1e293b',
+    marginTop: 12,
   },
-
-  emptyText: {
+  emptySubtitle: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: '#64748b',
+    marginTop: 4,
     textAlign: "center",
-    lineHeight: 20,
-    marginTop: 8,
+    paddingHorizontal: 20,
+  },
+  resetBtn: {
+    marginTop: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#0d9488',
+    borderRadius: 8,
+  },
+  resetBtnText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

@@ -1,145 +1,216 @@
-// components/doctor-card.tsx
-
-
-import {
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-} from "react-native";
-
-import { COLORS, RADIUS } from "../constants/theme";
-import { Doctor } from "../data/doctor";
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface DoctorCardProps {
-  doctor: Doctor;
-  onPress: (doctor: Doctor) => void;
+  doctor?: any;
+  id?: string | number;
+  name?: string;
+  specialty?: string;
+  rating?: number;
+  reviewsCount?: number;
+  experience?: string;
+  hospital?: string;
+  fee?: string;
+  imageUrl?: string;
+  onPress?: () => void;
 }
 
-export default function DoctorCard({
-  doctor,
-  onPress,
-}: DoctorCardProps) {
+export default function DoctorCard(props: DoctorCardProps) {
+  const d = props.doctor || {};
+  const name = props.name || d.name || 'Doctor';
+  const specialty = props.specialty || d.specialization || d.specialty || 'General Physician';
+  const rating = props.rating || Number(d.rating) || 4.9;
+  const experience = props.experience || (d.experience ? `${d.experience} yrs` : '5 yrs');
+  const hospital = props.hospital || d.hospital || 'Dhaka Medical Center, Dhaka';
+  const fee = props.fee || (d.fee ? `৳${d.fee}` : '৳500');
+  
+  const rawImageUrl = props.imageUrl || d.image_url || d.imageUrl || null;
+  const [imageError, setImageError] = useState(false);
+
+  const getInitial = (docName: string) => {
+    const clean = docName.replace(/^Dr\.\s*/i, '').trim();
+    return clean ? clean.charAt(0).toUpperCase() : 'D';
+  };
+
   return (
-    <Pressable
-      style={styles.card}
-      onPress={() => onPress(doctor)}
-    >
-      {/* Doctor image */}
-      <Image
-        source={{ uri: doctor.imageUrl }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+    <TouchableOpacity style={styles.card} onPress={props.onPress} activeOpacity={0.88}>
+      <View style={styles.topRow}>
+        {rawImageUrl && !imageError ? (
+          <Image
+            source={{ uri: rawImageUrl }}
+            style={styles.avatarImg}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <Text style={styles.avatarInitial}>{getInitial(name)}</Text>
+            <View style={styles.badgeOnline}>
+              <Ionicons name="medical" size={10} color="#fff" />
+            </View>
+          </View>
+        )}
 
-      {/* Doctor information */}
-      <View style={styles.information}>
-        <Text style={styles.name} numberOfLines={1}>
-          {doctor.name}
-        </Text>
-
-        <Text style={styles.specialization}>
-          {doctor.specialization}
-        </Text>
-
-        <Text style={styles.qualification} numberOfLines={1}>
-          {doctor.qualification}
-        </Text>
-
-        <View style={styles.detailsRow}>
-          <Text style={styles.rating}>
-            ★ {doctor.rating}
-          </Text>
-
-          <Text style={styles.experience}>
-            {doctor.experience} years
-          </Text>
+        <View style={styles.infoCol}>
+          <Text style={styles.doctorName} numberOfLines={1}>{name}</Text>
+          <Text style={styles.specialtyText} numberOfLines={1}>{specialty}</Text>
+          <View style={styles.hospitalRow}>
+            <Ionicons name="location-sharp" size={13} color="#ef4444" />
+            <Text style={styles.hospitalText} numberOfLines={1}>{hospital}</Text>
+          </View>
         </View>
-
-        <Text style={styles.availability}>
-          ● {doctor.availability}
-        </Text>
       </View>
 
-      {/* Right arrow */}
-      <Text style={styles.arrow}>›</Text>
-    </Pressable>
+      <View style={styles.divider} />
+
+      <View style={styles.bottomRow}>
+        <View style={styles.metaBadge}>
+          <Ionicons name="star" size={14} color="#f59e0b" />
+          <Text style={styles.metaText}>{rating}</Text>
+        </View>
+
+        <View style={styles.metaBadge}>
+          <Ionicons name="time-outline" size={14} color="#64748b" />
+          <Text style={styles.metaText}>{experience}</Text>
+        </View>
+
+        <View style={[styles.metaBadge, styles.feeBadge]}>
+          <Text style={styles.feeHighlight}>{fee}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.bookActionBtn} onPress={props.onPress} activeOpacity={0.8}>
+          <Text style={styles.bookActionBtnText}>Book Now</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surface,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 14,
-    borderRadius: RADIUS.medium,
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#e2e8f0',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 2,
   },
-
-  image: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginRight: 14,
+  topRow: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'center',
   },
-
-  information: {
+  avatarImg: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    borderWidth: 2,
+    borderColor: '#0d9488',
+    backgroundColor: '#f1f5f9',
+  },
+  avatarFallback: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#0d9488',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  avatarInitial: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  badgeOnline: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    backgroundColor: '#10b981',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  infoCol: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  doctorName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  specialtyText: {
+    fontSize: 13,
+    color: '#0d9488',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  hospitalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  hospitalText: {
+    fontSize: 12,
+    color: '#64748b',
     flex: 1,
   },
-
-  name: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
+  divider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginVertical: 12,
   },
-
-  specialization: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.primary,
-    marginTop: 3,
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-
-  qualification: {
+  metaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  metaText: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 3,
+    fontWeight: '600',
+    color: '#334155',
   },
-
-  detailsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 7,
+  feeBadge: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#bbf7d0',
   },
-
-  rating: {
+  feeHighlight: {
     fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.warning,
-    marginRight: 14,
+    fontWeight: 'bold',
+    color: '#0f766e',
   },
-
-  experience: {
+  bookActionBtn: {
+    marginLeft: 'auto',
+    backgroundColor: '#0d9488',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  bookActionBtnText: {
+    color: '#ffffff',
     fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-
-  availability: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: COLORS.success,
-    marginTop: 5,
-  },
-
-  arrow: {
-    fontSize: 28,
-    color: COLORS.textMuted,
-    marginLeft: 8,
+    fontWeight: 'bold',
   },
 });
